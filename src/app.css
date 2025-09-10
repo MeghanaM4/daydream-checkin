@@ -1,1 +1,47 @@
 @import 'tailwindcss';
+@import '@fontsource/atkinson-hyperlegible';
+
+/* Fonts */
+@font-face {
+  font-family: 'Daydream New';
+  src: url('/fonts/serif.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Daydream New';
+  src: url('/fonts/serif-italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* Primary */
+  --color-kirby-pink: #FFB9DC;
+  --color-moonbeam-ice: #7CC4F0;
+  --color-national-butter: #FBEB86;
+  /* Secondary */
+  --color-blue-jeans: #40799A;
+  --color-coffee-brown: #78531D;
+  --color-turtle-turquoise: #44DBC8;
+  --color-polar-bear: #EA9DAF;
+  /* UI */
+  --color-dark-blue: #4376A2;
+  --color-button-pink: #E472AB;
+  --color-bg-cream: #FFFBDF;
+  --color-border-tan: #D3B180;
+  --color-main-page-yellow: #FCEFC3;
+}
+
+html, body {
+  background: var(--color-bg-cream);
+  color: var(--color-dark-blue);
+  font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+h1, h2, h3 {
+  font-family: 'Daydream New', serif;
+}
+

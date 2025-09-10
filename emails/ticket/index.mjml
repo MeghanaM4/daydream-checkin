@@ -1,0 +1,56 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Inter, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" />
+      <mj-text font-size="16px" color="#111827" line-height="1.5" />
+      <mj-section background-color="#ffffff" padding="0px" />
+      <mj-column padding="0px" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f9fafb">
+    <mj-section padding="24px 24px 8px 24px" background-color="#ffffff">
+      <mj-column>
+        <mj-text>
+          Hey {DATA_VARIABLE:preferred_name},
+        </mj-text>
+        <mj-text>
+          <strong>You’re all set for {DATA_VARIABLE:event}!</strong> Just show this QR Code at the door and you’ll be let in.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0 24px 32px 24px" background-color="#ffffff">
+      <mj-column background-color="#f3f4f5" border-radius="8px" padding="24px 16px">
+        <mj-image
+          align="center"
+          alt="Your check‑in QR code"
+          width="240px"
+          padding="8px 0 8px 0"
+          src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data={DATA_VARIABLE:id}"
+          href="{DATA_VARIABLE:ticket_url}"
+        />
+        <mj-text align="center" font-size="14px" color="#4b5563" padding="10px 0 0 0">
+          Manual check‑in ID:
+          <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+                       background:#eef2f7; padding:2px 6px; border-radius:4px; color:#111827;">
+            {DATA_VARIABLE:id}
+          </span>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="8px 24px 24px 24px" background-color="#ffffff">
+      <mj-column>
+        <mj-text font-size="12px" color="#6b7280">
+          This email was intended for {DATA_VARIABLE:preferred_name} {DATA_VARIABLE:last_name}.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    
+    <mj-section padding="24px 0 0 0">
+      <mj-column>
+        <mj-image src="banner-small.png" alt="Daydream" width="600px" padding="0px" />
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
