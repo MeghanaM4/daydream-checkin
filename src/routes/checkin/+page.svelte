@@ -12,8 +12,24 @@
   const fields: AttendeeFields = attendee?.record?.fields ?? {} as any;
 
   const inputClass = 'rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2';
+  function sizeWord(s?: string) {
+    if (!s) return '—';
+    return s === 'S' ? 'Small' : s === 'M' ? 'Medium' : s === 'L' ? 'Large' : s === 'XL' ? 'Extra Large' : s;
+  }
+  function formatPhone(p?: string) {
+    const d = (p || '').replace(/\D/g, '');
+    if (!d) return '—';
+    if (d.length <= 10) {
+      if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+      return d; // short/unexpected
+    }
+    const ccLen = d.length - 10;
+    const cc = d.slice(0, ccLen);
+    const rest = d.slice(ccLen);
+    return `+${cc} (${rest.slice(0,3)}) ${rest.slice(3,6)}-${rest.slice(6)}`;
+  }
 
-  let current = $state<'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'email' | 'complete'>('info');
+  let current = $state<'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'email' | 'complete'>('info');
   const steps = [
     { key: 'info', label: 'Verify info' },
     { key: 'additional', label: 'Additional info' },
@@ -21,6 +37,7 @@
     { key: 'attendance', label: 'Attendance' },
     { key: 'accounts', label: 'Accounts' },
     { key: 'email', label: 'Email verification' },
+    { key: 'review', label: 'Review' },
     { key: 'complete', label: 'Complete' }
   ];
 
@@ -236,6 +253,17 @@
     }
 
     showSaving();
+    // Compute next step and move immediately; save runs in background
+    const nextStep = current === 'info' ? 'additional'
+      : current === 'additional' ? 'waiver'
+      : current === 'waiver' ? 'attendance'
+      : current === 'attendance' ? 'accounts'
+      : current === 'accounts' ? 'email'
+      : current === 'email' ? 'review'
+      : current === 'review' ? 'complete'
+      : current;
+    current = nextStep as any;
+
     let retried = false;
     async function attemptFinalize() {
       incPending();
@@ -243,12 +271,6 @@
       if (res.ok) {
         showSaved();
         decPending();
-        if (current === 'info') current = 'additional';
-        else if (current === 'additional') current = 'waiver';
-        else if (current === 'waiver') current = 'attendance';
-        else if (current === 'attendance') current = 'accounts';
-        else if (current === 'accounts') current = 'email';
-        else if (current === 'email') current = 'complete';
       } else {
         let retryable = true;
         try {
@@ -269,6 +291,7 @@
         }
       }
     }
+    // Fire and forget
     attemptFinalize();
   }
 
@@ -279,6 +302,7 @@
     else if (current === 'attendance') current = 'waiver';
     else if (current === 'accounts') current = 'attendance';
     else if (current === 'email') current = 'accounts';
+    else if (current === 'review') current = 'email';
   }
 
   // Email verification calls
@@ -340,18 +364,12 @@
     return m ? decodeURIComponent(m[1]) : null;
   }
   function setStepPersistence(step: string) {
-    try { localStorage.setItem('checkin_current_step', step); } catch {}
     document.cookie = `checkin_step=${encodeURIComponent(step)}; path=/; max-age=${60 * 60 * 24 * 30}`;
   }
   onMount(() => {
-    const saved = localStorage.getItem('checkin_current_step');
-    const allowed = ['info','additional','waiver','attendance','accounts','email','complete'];
-    if (saved && allowed.includes(saved)) {
-      current = saved as any;
-    } else {
-      const ck = getCookie('checkin_step');
-      if (ck && allowed.includes(ck)) current = ck as any;
-    }
+    const allowed = ['info','additional','waiver','attendance','accounts','review','email','complete'];
+    const ck = getCookie('checkin_step');
+    if (ck && allowed.includes(ck)) current = ck as any;
     // Warn on unload if there are pending saves
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (pendingSaves > 0) {
@@ -373,7 +391,7 @@
 {:else}
   <div class="space-y-6">
     <Progress steps={steps} current={current} />
-    <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
+
 
     {#if current === 'info'}
       <Section title="Information Verification" description="Please confirm your information is correct.">
@@ -545,6 +563,115 @@
             {/if}
           </div>
 
+          <div class="flex justify-between gap-3 mt-2">
+            <Button variant="outline" onclick={back}>Back</Button>
+            <Button onclick={next}>Next</Button>
+          </div>
+        </div>
+      </Section>
+    {/if}
+
+    {#if current === 'review'}
+      <Section title="Review your information">
+        <div class="space-y-5 text-[15px]">
+          <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
+          <div class="group relative">
+            <div class="flex items-center gap-2">
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='info'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='info'; }}}>Personal Information</div>
+              <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit personal information" onclick={() => current='info'}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <div class="mt-2 opacity-90">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div class="opacity-70 text-sm">First name</div>
+                  <div>{info.first_name}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">Last name</div>
+                  <div>{info.last_name}</div>
+                </div>
+                {#if info.preferred_name}
+                <div class="md:col-span-2">
+                  <div class="opacity-70 text-sm">Preferred name</div>
+                  <div>{info.preferred_name}</div>
+                </div>
+                {/if}
+                <div>
+                  <div class="opacity-70 text-sm">Email</div>
+                  <div class="break-all">{info.email}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">Phone</div>
+                  <div>{formatPhone(info.phone)}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">Address</div>
+                  <div>{info.address_1}</div>
+                  <div>{info.address_2 || '—'}</div>
+                  <div>{info.city}, {info.state} {info.zip_code}</div>
+                  <div>{info.country || ''}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">DOB</div>
+                  <div>{info.dob}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">Shirt size</div>
+                  <div>{sizeWord(additional.shirt_size)}</div>
+                </div>
+                <div>
+                  <div class="opacity-70 text-sm">Pronouns</div>
+                  <div>{(additional.pronouns||[]).join(', ') || '—'}</div>
+                </div>
+                <div class="md:col-span-2">
+                  <div class="opacity-70 text-sm">Dietary restrictions</div>
+                  <div>{additional.dietary_restrictions || '—'}</div>
+                </div>
+                <div class="md:col-span-2">
+                  <div class="opacity-70 text-sm">Notes</div>
+                  <div>{additional.additional_accommodations || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+          <div class="group relative">
+            <div class="flex items-center gap-2">
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='additional'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='additional'; }}}>Emergency Contacts</div>
+              <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit emergency contacts" onclick={() => current='additional'}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
+            <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
+            <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
+            <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+            </div>
+            <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
+            <div><span class="opacity-70">Name:</span> {additional.emergency_contact_2_name || '—'}</div>
+            <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_2_phone) || '—'}</div>
+            <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_2_relationship || '—'}</div>
+            </div>
+            </div>
+          </div>
+          <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+          <div class="group relative">
+            <div class="flex items-center gap-2">
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='accounts'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='accounts'; }}}>Accounts</div>
+              <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit accounts" onclick={() => current='accounts'}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 opacity-90">
+            <div><span class="opacity-70">Connected GitHub Account:</span> {accounts.github_username || '—'}</div>
+            <div><span class="opacity-70">Connected Itch.io Account:</span> {accounts.itch_username || '—'}</div>
+              <div class="md:col-span-2"><span class="opacity-70">Email:</span> {info.email}</div>
+              </div>
+          </div>
+          <div class="text-sm opacity-80 mt-4">By clicking Next, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
           <div class="flex justify-between gap-3 mt-2">
             <Button variant="outline" onclick={back}>Back</Button>
             <Button onclick={next}>Next</Button>

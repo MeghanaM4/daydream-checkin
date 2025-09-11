@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   if (!attendee) return bad('Invalid session');
 
   const body = await request.json().catch(() => ({}));
-  const section = body.section as 'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'email';
+  const section = body.section as 'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'email';
   const data = (body.data as Partial<AttendeeFields>) ?? {};
   const finalize = !!body.finalize;
   if (!section) return bad('Invalid payload');
@@ -102,6 +102,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     Object.assign(toUpdate, { dummy_checkin_attendance_confirmation: !!(data as any).attendance_confirmation } as any);
   } else if (section === 'waiver') {
     // placeholder: no-op for now
+  } else if (section === 'review') {
+    // no-op: read-only summary step
   } else if (section === 'email') {
     // nothing to update here directly
   } else {
