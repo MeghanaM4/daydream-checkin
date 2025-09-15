@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   let { eventName = '', location = '', date = '', format = '' } = $props();
 </script>
 
@@ -8,7 +9,7 @@
   <div class="relative flex items-start gap-4">
     <div class="shrink-0 w-10 h-10 rounded-xl bg-[color:var(--color-turtle-turquoise)] shadow-inner"></div>
     <div class="text-[color:var(--color-dark-blue)]">
-      <div class="text-sm opacity-80">You’re registered for</div>
+      <div class="text-sm opacity-80">{t('event.registered_for')}</div>
       <div class="text-2xl font-semibold leading-tight">{eventName}</div>
       <div class="opacity-90">{location}</div>
       <div class="opacity-80">{date} • {format}</div>

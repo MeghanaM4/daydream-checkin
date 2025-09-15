@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { t } from '$lib/i18n';
 
   onMount(async () => {
     const hash = window.location.hash.slice(1);
@@ -27,4 +28,4 @@
   });
 </script>
 
-<div class="p-6">Connecting your Itch.io account…</div>
+<div class="p-6">{t('accounts.connecting_itch')}</div>

@@ -1,0 +1,205 @@
+{
+  "app": {
+    "title": "Daydream Check‑in"
+  },
+  "common": {
+    "next": "Next",
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "submit": "Submit!",
+    "select": "Select",
+    "redirecting": "Redirecting…",
+    "open_in_new_tab": "Open in new tab",
+    "loading_events": "Loading events…"
+  },
+  "status": {
+    "saving": "Saving…",
+    "saved": "Changes saved",
+    "save_failed": "Save failed: {message}"
+  },
+  "errors": {
+    "unknown": "Unknown error",
+    "events_load": "Could not load events. Please try again.",
+    "change_event": "Could not change event. Please try again."
+  },
+  "session": {
+    "invalid": "Invalid or expired check‑in session. Please use your email link.",
+    "checking_in_as": "Checking in as {name}",
+    "logout": "Log out"
+  },
+  "picker": {
+    "search_placeholder": "Search by event, location, format, or date"
+  },
+  "alt": {
+    "event_tshirt": "Event t‑shirt",
+    "ticket_qr": "Ticket QR",
+    "jumpstart_tutorial": "Jumpstart tutorial",
+    "daydream_ticket_iframe": "Your Daydream ticket"
+  },
+  "event": {
+    "checking_in_for": "You’re checking in for:",
+    "registered_for": "You’re registered for",
+    "edit_event": "Change event",
+    "estimated_duration": "This should take about {minutes} minutes.",
+    "intro": "We’ll run through a few steps to confirm your details for Daydream.",
+    "bullet_food": "We’ll ask about dietary restrictions so we can plan food accordingly.",
+    "bullet_shirt": "We’ll get your T‑shirt size for pickup at the event.",
+    "bullet_contacts": "We’ll collect emergency contact info in case we need to reach someone.",
+    "bullet_software": "We’ll connect the accounts you’ll use during the event.",
+    "encouragement": "You can always come back and finish later—your progress will be saved."
+  },
+  "steps": {
+    "info": "Verify info",
+    "additional": "Additional info",
+    "waiver": "Waiver",
+    "accounts": "Accounts",
+    "review": "Review",
+    "complete": "Complete"
+  },
+  "sizes": {
+    "S": "Small",
+    "M": "Medium",
+    "L": "Large",
+    "XL": "Extra Large"
+  },
+  "pronouns": {
+    "he_him": "he / him",
+    "she_her": "she / her",
+    "they_other": "they / them or other"
+  },
+  "info": {
+    "section_title": "Personal Information",
+    "section_desc": "Please confirm your information is correct.",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "preferred_name": "Preferred name",
+    "pronouns": "Pronouns",
+    "email": "Email",
+    "phone": "Phone",
+    "dob": "Date of birth",
+    "address1": "Address line 1",
+    "address2": "Address line 2",
+    "city": "City",
+    "state": "State",
+    "country": "Country",
+    "zip": "ZIP code",
+    "youll_need_email": "You'll need access to this email during the event .",
+    "edit_email": "Edit email",
+    "cancel_email_update": "Cancel email update",
+    "new_email": "New email",
+    "update_email": "Update email",
+    "we_will_send_code": "We'll send a 6‑digit code to this address.",
+    "verification_sent": "Verification code sent to {email}. Check your inbox.",
+    "invalid_phone": "Invalid phone number",
+    "invalid_phone_short": "Invalid phone",
+    "invalid_email": "Invalid email",
+    "required": "Required"
+  },
+  "placeholders": {
+    "full_name": "Full name",
+    "phone_eg": "(555) 123-4567 or +1 555 123 4567",
+    "relationship_eg": "Parent, guardian, etc.",
+    "dietary_eg": "e.g. vegetarian, peanut allergy",
+    "accessibility_eg": "Accessibility needs, scheduling constraints, etc."
+  },
+  "additional": {
+    "section_title": "Additional Information",
+    "emergency_contacts": "Emergency contacts",
+    "emergency_contacts_hint": "This should be someone who can answer immediately and help in an emergency (a parent/guardian or trusted adult).",
+    "contact1_name": "Contact 1 name",
+    "contact1_phone": "Contact 1 phone",
+    "contact1_relationship": "Contact 1 relationship",
+    "contact2_name": "Contact 2 name",
+    "contact2_phone": "Contact 2 phone",
+    "contact2_relationship": "Contact 2 relationship",
+    "optional": "(optional)",
+    "health_risks_hint": "If you have specific health risks (e.g., epilepsy, severe allergies, asthma), please add a second emergency contact.",
+    "dietary": "Dietary restrictions & allergies",
+    "anything_else": "Is there anything else we should know to help make this the best experience for you?",
+    "shirt_size": "T‑shirt size",
+    "shirt_size_hint": "(Unisex • US sizing)"
+  },
+  "accounts": {
+    "section_title": "Account Connections",
+    "github": "GitHub account",
+    "connected_as": "✓ Connected as {username}",
+    "disconnect": "Disconnect",
+    "not_connected": "Not connected",
+    "have_account_q": "Do you already have a {service} account?",
+    "yes": "Yes",
+    "no": "No",
+    "sign_in_with": "Sign in with {service}",
+    "please": "Please",
+    "create_account": "create a {service} account",
+    "then_return_click": "first, then return here and click",
+    "connecting_github": "Connecting your GitHub account…",
+    "connecting_itch": "Connecting your Itch.io account…",
+    "github_connected_toast": "GitHub connected successfully",
+    "itch_connected_toast": "Itch.io connected successfully",
+    "disconnecting_github": "Disconnecting GitHub…",
+    "github_disconnected": "GitHub disconnected",
+    "disconnecting_itch": "Disconnecting Itch.io…",
+    "itch_disconnected": "Itch.io disconnected"
+  },
+  "waiver": {
+    "section_title": "Waiver",
+    "open_message": "Please click the button below to open the waiver. When you finish, you’ll be returned here automatically.",
+    "completed": "✓ Waiver completed",
+    "open_button": "Open waiver",
+    "not_configured": "Waiver form is not configured. Set PUBLIC_DOCUSEAL_EMBED_URL in your environment.",
+    "skip_for_now": "Skip for now",
+    "must_complete": "✗ Waiver not completed — you must <button>complete the waiver</button> to continue.",
+    "not_completed_prefix": "✗ Waiver not completed — you must",
+    "complete_aria": "complete the waiver",
+    "to_continue": "to continue.",
+    "complete_before_continuing": "Please complete the waiver before continuing",
+    "verify_failed": "Could not verify waiver."
+  },
+  "email": {
+    "verifying_code": "Verifying code…",
+    "updated_success": "Email updated successfully",
+    "verification_failed": "Verification failed",
+    "sending": "Sending email…",
+    "sent": "Email sent",
+    "send_failed": "Failed to send verification email"
+  },
+  "review": {
+    "title": "Almost Done! Review your information:",
+    "personal_info": "Personal Information",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "preferred_name": "Preferred name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "dob": "DOB",
+    "shirt_size": "Shirt size",
+    "pronouns": "Pronouns",
+    "dietary": "Dietary restrictions",
+    "notes": "Notes",
+    "accounts": "Accounts",
+    "relationship": "Relationship",
+    "connected_github": "Connected GitHub Account:",
+    "connected_itch": "Connected Itch.io Account:",
+    "attendance_ack": "I understand I’m signing up for an in‑person event and will need to attend this event in‑person to participate.",
+    "submit_disclaimer": "By clicking Submit, you confirm your information is accurate. After submission, you may not be able to edit it further."
+  },
+  "complete": {
+    "next_steps": "Next steps",
+    "promo": "Want a head start, <i>and</i> some prizes? Spend an hour following our tutorial on how to make a game and get a free sticker sheet + get entered into a raffle for bigger prizes.",
+    "your_ticket": "Your e‑ticket",
+    "checked_in": "You're all checked in!",
+    "show_ticket": "Show this ticket at check‑in. We also emailed a copy of your ticket to you.",
+    "open_ticket_new_tab": "Open ticket in new tab"
+  },
+  "home": {
+    "blurb": "You should have received a link in your email that you can use to check in for Daydream."
+  },
+  "ticket": {
+    "not_found": "Ticket not found.",
+    "fallback_event_name": "Daydream",
+    "name": "Name",
+    "email": "Email"
+  }
+}

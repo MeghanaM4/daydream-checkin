@@ -10,6 +10,7 @@
   import { toast } from 'svelte-sonner';
   import { fade, fly } from 'svelte/transition';
   import { countries as countryData } from 'countries-list';
+  import { t } from '$lib/i18n';
 
   let { data } = $props();
   const attendee = data?.attendee;
@@ -35,7 +36,7 @@
   const inputClass = 'rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2';
   function sizeWord(s?: string) {
     if (!s) return '—';
-    return s === 'S' ? 'Small' : s === 'M' ? 'Medium' : s === 'L' ? 'Large' : s === 'XL' ? 'Extra Large' : s;
+    return s === 'S' ? t('sizes.S') : s === 'M' ? t('sizes.M') : s === 'L' ? t('sizes.L') : s === 'XL' ? t('sizes.XL') : s;
   }
   // Country dropdown data (name + emoji flag for display only)
   const countryOptions: Array<{ code: string; name: string; emoji: string }> = Object.entries(countryData as any)
@@ -56,12 +57,12 @@
 
   let current = $state<'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'complete'>(data?.initialStep as any || 'info');
   const steps = [
-    { key: 'info', label: 'Verify info' },
-    { key: 'additional', label: 'Additional info' },
-    { key: 'waiver', label: 'Waiver' },
-    { key: 'accounts', label: 'Accounts' },
-    { key: 'review', label: 'Review' },
-    { key: 'complete', label: 'Complete' }
+    { key: 'info', label: t('steps.info') },
+    { key: 'additional', label: t('steps.additional') },
+    { key: 'waiver', label: t('steps.waiver') },
+    { key: 'accounts', label: t('steps.accounts') },
+    { key: 'review', label: t('steps.review') },
+    { key: 'complete', label: t('steps.complete') }
   ];
 
   function progressPct() {
@@ -168,7 +169,7 @@
       if (section === 'info') {
         const n = normalizedPhoneOrNull(info.phone);
         if (!n) {
-          infoErrors.phone = 'Invalid phone number';
+          infoErrors.phone = t('info.invalid_phone');
           return; // do not call server
         } else {
           infoErrors.phone = undefined;
@@ -271,7 +272,7 @@
   async function verifyIfReady() {
     const val = codeValue();
     if (/^\d{6}$/.test(val)) {
-      const id = toast('Verifying code…');
+      const id = toast(t('email.verifying_code'));
       const res = await fetch('/api/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: val }) });
       if (res.ok) {
         emailError = undefined;
@@ -279,13 +280,13 @@
         emailLocked = false;
         emailMode = 'flash';
         setTimeout(() => { emailMode = 'idle'; codeDigits = ['', '', '', '', '', '']; }, 800);
-        toast.success('Email updated successfully', { id });
+        toast.success(t('email.updated_success'), { id });
       } else {
         try {
           const err = await res.json();
-          emailError = err?.message || 'Verification failed';
-        } catch { emailError = 'Verification failed'; }
-        toast.error(emailError || 'Verification failed');
+          emailError = err?.message || t('email.verification_failed');
+        } catch { emailError = t('email.verification_failed'); }
+        toast.error(emailError || t('email.verification_failed'));
       }
     }
   }
@@ -323,19 +324,19 @@
   async function sendUpdateEmail() {
     emailError = undefined;
     if (!pendingEmail || !/\S+@\S+\.[\w-]+/.test(pendingEmail)) {
-      toast.error('Enter a valid email');
+      toast.error(t('info.invalid_email'));
       return;
     }
-    const id = toast('Sending email…');
+    const id = toast(t('email.sending'));
     const res = await fetch('/api/send-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail }) });
     if (res.ok) {
       emailSent = true;
       emailMode = 'verify';
-      toast.success('Email sent', { id });
+      toast.success(t('email.sent'), { id });
       // focus first code box
       setTimeout(() => focusCodeIndex(0), 0);
     } else {
-      let msg = 'Failed to send verification email';
+      let msg = t('email.send_failed');
       try { const err = await res.json(); msg = err?.message || msg; } catch {}
       toast.error(msg, { id });
     }
@@ -505,12 +506,12 @@
           if (j?.ok && j.completed) {
             waiverDone = true;
             fields.waiver_completed = true as any;
-            toast.success('Waiver completed');
+            toast.success(t('waiver.completed'));
           } else {
-            toast.error('Could not verify waiver yet. Please wait a moment and try again.');
+            toast.error(t('waiver.verify_failed'));
           }
         } catch {}
-      }).catch(() => toast.error('Could not verify waiver.'));
+      }).catch(() => toast.error(t('waiver.verify_failed')));
       url.searchParams.delete('waiver');
       url.searchParams.delete('waiverDone');
       window.history.replaceState({}, '', url.toString());
@@ -521,10 +522,10 @@
     // Show OAuth connect toast if present
     const ck = getCookie('oauth_connected');
     if (ck === 'github') {
-      toast.success('GitHub connected successfully');
+      toast.success(t('accounts.github_connected_toast'));
       document.cookie = 'oauth_connected=; path=/; max-age=0';
     } else if (ck === 'itch') {
-      toast.success('Itch.io connected successfully');
+      toast.success(t('accounts.itch_connected_toast'));
       document.cookie = 'oauth_connected=; path=/; max-age=0';
     }
     // Warn on unload if there are pending saves
@@ -552,45 +553,45 @@
 </script>
 
 {#if !attendee}
-  <div class="p-6">Invalid or expired check-in session. Please use your email link.</div>
+  <div class="p-6">{t('session.invalid')}</div>
 {:else}
   <div class="space-y-6">
     {#if current === 'complete'}
-      <button type="button" class="fixed right-6 top-5 underline cursor-pointer" onclick={() => (window.location.href = '/checkin/logout')}>Log out</button>
+      <button type="button" class="fixed right-6 top-5 underline cursor-pointer" onclick={() => (window.location.href = '/checkin/logout')}>{t('session.logout')}</button>
     {:else}
       <div class="w-full h-2 rounded-md bg-[color:var(--color-border-tan)]/40 overflow-hidden"><div class="h-full bg-[color:var(--color-button-pink)] transition-[width] duration-300" style={`width: ${progressPct()}%`}></div></div>
     {/if}
 
 
     {#if current === 'info'}
-      <Section title="Personal Information" description="Please confirm your information is correct.">
+      <Section title={t('info.section_title')} description={t('info.section_desc')}>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <FormField label="First name" required error={infoErrors.first_name}>
+          <FormField label={t('info.first_name')} required error={infoErrors.first_name}>
             <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.first_name} oninput={() => { infoErrors.first_name = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField label="Last name" required error={infoErrors.last_name}>
+          <FormField label={t('info.last_name')} required error={infoErrors.last_name}>
             <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.last_name} oninput={() => { infoErrors.last_name = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField label="Preferred name">
+          <FormField label={t('info.preferred_name')}>
             <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.preferred_name} oninput={() => save('info', info)} disabled={emailLocked} />
           </FormField>
           <div>
-            <div class="text-sm opacity-80 mb-1">Pronouns</div>
+            <div class="text-sm opacity-80 mb-1">{t('info.pronouns')}</div>
             <div class="flex flex-col gap-2" class:opacity-60={emailLocked}>
-              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('he / him')} onchange={() => togglePronoun('he / him')} /> he / him</label>
-              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('she / her')} onchange={() => togglePronoun('she / her')} /> she / her</label>
-              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('they / them or other')} onchange={() => togglePronoun('they / them or other')} /> they / them or other</label>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('he / him')} onchange={() => togglePronoun('he / him')} /> {t('pronouns.he_him')}</label>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('she / her')} onchange={() => togglePronoun('she / her')} /> {t('pronouns.she_her')}</label>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('they / them or other')} onchange={() => togglePronoun('they / them or other')} /> {t('pronouns.they_other')}</label>
             </div>
           </div>
-          <FormField label="Email" required error={infoErrors.email}>
+          <FormField label={t('info.email')} required error={infoErrors.email}>
             <div class="relative">
               <input type="email" class={inputClass + ' w-full pr-8 opacity-60 cursor-not-allowed'} value={info.email} disabled={true} />
               {#if emailMode === 'idle'}
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label="Edit email" onclick={() => { emailMode = 'compose'; emailLocked = true; pendingEmail = ''; }}>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label={t('info.edit_email')} onclick={() => { emailMode = 'compose'; emailLocked = true; pendingEmail = ''; }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                 </button>
               {:else if emailMode === 'compose' || emailMode === 'verify'}
-                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label="Cancel email update" onclick={resetEmailFlow}>
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label={t('info.cancel_email_update')} onclick={resetEmailFlow}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
                 </button>
               {/if}
@@ -601,7 +602,7 @@
               {/if}
             </div>
           </FormField>
-          <FormField label="Phone" required error={infoErrors.phone}>
+          <FormField label={t('info.phone')} required error={infoErrors.phone}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.phone} oninput={() => { infoErrors.phone = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
 
@@ -611,18 +612,18 @@
                 {#if emailMode === 'compose'}
                   <div class="flex gap-2 items-end">
                     <label class="flex-1">
-                      <div class="text-sm opacity-70">New email</div>
+                      <div class="text-sm opacity-70">{t('info.new_email')}</div>
                       <input type="email" class={inputClass + ' w-full'} bind:value={pendingEmail} placeholder={info.email} onkeydown={(e)=>{ if(e.key==='Enter'){ sendUpdateEmail(); } }} />
                     </label>
-                    <Button onclick={sendUpdateEmail}>Update email</Button>
-                    <Button variant="outline" onclick={resetEmailFlow}>Cancel</Button>
+                    <Button onclick={sendUpdateEmail}>{t('info.update_email')}</Button>
+                    <Button variant="outline" onclick={resetEmailFlow}>{t('common.cancel')}</Button>
                   </div>
-                  <div class="text-sm opacity-70">We'll send a 6‑digit code to this address.</div>
+                  <div class="text-sm opacity-70">{t('info.we_will_send_code')}</div>
                   {#if emailError}
                     <div class="text-red-600 text-sm">{emailError}</div>
                   {/if}
                 {:else}
-                  <div class="text-sm">Verification code sent to <span class="font-medium">{pendingEmail}</span>. Check your inbox.</div>
+                  <div class="text-sm">{t('info.verification_sent', { email: pendingEmail })}</div>
                   <div class="flex items-center gap-2">
                     {#each [0,1,2,3,4,5] as i}
                       <input
@@ -636,7 +637,7 @@
                         inputmode="numeric"
                       />
                     {/each}
-                    <Button variant="outline" onclick={resetEmailFlow}>Cancel</Button>
+                    <Button variant="outline" onclick={resetEmailFlow}>{t('common.cancel')}</Button>
                   </div>
                   {#if emailError}
                     <div class="text-red-600 text-sm">{emailError}</div>
@@ -646,38 +647,38 @@
             </div>
           {/if}
 
-          <div class="md:col-span-2 text-sm opacity-70 -mt-1">You'll need access to this email during the event .</div>
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">{t('info.youll_need_email')}</div>
 
 
-          <FormField classes="md:col-span-2" label="Date of birth" required error={infoErrors.dob}>
+          <FormField classes="md:col-span-2" label={t('info.dob')} required error={infoErrors.dob}>
             <input type="date" class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.dob} oninput={() => { infoErrors.dob = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField classes="md:col-span-2" label="Address line 1" required error={infoErrors.address_1}>
+          <FormField classes="md:col-span-2" label={t('info.address1')} required error={infoErrors.address_1}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.address_1} oninput={() => { infoErrors.address_1 = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField classes="md:col-span-2" label="Address line 2">
+          <FormField classes="md:col-span-2" label={t('info.address2')}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.address_2} oninput={() => save('info', info)} disabled={emailLocked} />
           </FormField>
-          <FormField label="City" required error={infoErrors.city}>
+          <FormField label={t('info.city')} required error={infoErrors.city}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.city} oninput={() => { infoErrors.city = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField label="State" required error={infoErrors.state}>
+          <FormField label={t('info.state')} required error={infoErrors.state}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.state} oninput={() => { infoErrors.state = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
-          <FormField label="Country" required error={infoErrors.country}>
+          <FormField label={t('info.country')} required error={infoErrors.country}>
             <select class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.country} onchange={() => { infoErrors.country = undefined; save('info', info); }} disabled={emailLocked}>
-              <option value="">Select</option>
+              <option value="">{t('common.select')}</option>
               {#each countryOptions as c}
                 <option value={c.name}>{c.emoji} {c.name}</option>
               {/each}
             </select>
           </FormField>
-          <FormField label="ZIP code" required error={infoErrors.zip_code}>
+          <FormField label={t('info.zip')} required error={infoErrors.zip_code}>
             <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.zip_code} oninput={() => { infoErrors.zip_code = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
         </div>
         <div class="flex justify-end gap-3 mt-4">
-          <Button onclick={next} disabled={emailLocked}>Next</Button>
+          <Button onclick={next} disabled={emailLocked}>{t('common.next')}</Button>
         </div>
 
 
@@ -685,82 +686,82 @@
     {/if}
 
     {#if current === 'waiver'}
-      <Section title="Waiver">
+      <Section title={t('waiver.section_title')}>
         <div class="space-y-3">
-          <p class="opacity-80">Please click the button below to open the waiver. When you finish, you’ll be returned here automatically.</p>
+          <p class="opacity-80">{t('waiver.open_message')}</p>
           {#if docusealUrl}
             {#if waiverDone || fields.waiver_completed}
-              <div class="flex justify-center text-sm text-green-700">✓ Waiver completed</div>
+              <div class="flex justify-center text-sm text-green-700">{t('waiver.completed')}</div>
             {:else}
               <div class="flex justify-center">
-                <Button onclick={() => (window.location.href = docusealUrl)}>Open waiver</Button>
+                <Button onclick={() => (window.location.href = docusealUrl)}>{t('waiver.open_button')}</Button>
               </div>
             {/if}
           {:else}
-            <div class="text-sm text-red-600">Waiver form is not configured. Set PUBLIC_DOCUSEAL_EMBED_URL in your environment.</div>
+            <div class="text-sm text-red-600">{t('waiver.not_configured')}</div>
           {/if}
           <div class="flex justify-between gap-3 mt-2">
-            <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next}>{waiverDone ? 'Next' : 'Skip for now'}</Button>
+            <Button variant="outline" onclick={back}>{t('common.back')}</Button>
+            <Button onclick={next}>{waiverDone ? t('common.next') : t('waiver.skip_for_now')}</Button>
           </div>
         </div>
       </Section>
     {/if}
 
     {#if current === 'additional'}
-      <Section title="Additional Information">
+      <Section title={t('additional.section_title')}>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <!-- Pronouns are already in DB; just display them above in the info section if needed. Removed editing here. -->
 
-          <div class="md:col-span-2 font-semibold">Emergency contacts</div>
-          <div class="md:col-span-2 text-sm opacity-70 -mt-1">This should be someone who can answer immediately and help in an emergency (a parent/guardian or trusted adult).</div>
-          <FormField label="Contact 1 name" required error={additionalErrors.emergency_contact_1_name}>
-            <input placeholder="Full name" class={inputClass} bind:value={additional.emergency_contact_1_name} oninput={() => { additionalErrors.emergency_contact_1_name = undefined; save('additional', additional); }} />
+          <div class="md:col-span-2 font-semibold">{t('additional.emergency_contacts')}</div>
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">{t('additional.emergency_contacts_hint')}</div>
+          <FormField label={t('additional.contact1_name')} required error={additionalErrors.emergency_contact_1_name}>
+            <input placeholder={t('placeholders.full_name')} class={inputClass} bind:value={additional.emergency_contact_1_name} oninput={() => { additionalErrors.emergency_contact_1_name = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField label="Contact 1 phone" required error={additionalErrors.emergency_contact_1_phone}>
-            <input placeholder="(555) 123-4567 or +1 555 123 4567" class={inputClass} bind:value={additional.emergency_contact_1_phone} oninput={() => { additionalErrors.emergency_contact_1_phone = undefined; save('additional', additional); }} />
+          <FormField label={t('additional.contact1_phone')} required error={additionalErrors.emergency_contact_1_phone}>
+            <input placeholder={t('placeholders.phone_eg')} class={inputClass} bind:value={additional.emergency_contact_1_phone} oninput={() => { additionalErrors.emergency_contact_1_phone = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField classes="md:col-span-2" label="Contact 1 relationship" required error={additionalErrors.emergency_contact_1_relationship}>
-            <input placeholder="Parent, guardian, etc." class={inputClass} bind:value={additional.emergency_contact_1_relationship} oninput={() => { additionalErrors.emergency_contact_1_relationship = undefined; save('additional', additional); }} />
+          <FormField classes="md:col-span-2" label={t('additional.contact1_relationship')} required error={additionalErrors.emergency_contact_1_relationship}>
+            <input placeholder={t('placeholders.relationship_eg')} class={inputClass} bind:value={additional.emergency_contact_1_relationship} oninput={() => { additionalErrors.emergency_contact_1_relationship = undefined; save('additional', additional); }} />
           </FormField>
 
-          <FormField label="Contact 2 name" hint="(optional)" error={additionalErrors.emergency_contact_2_name}>
-            <input placeholder="Full name" class={inputClass} bind:value={additional.emergency_contact_2_name} oninput={() => { additionalErrors.emergency_contact_2_name = undefined; save('additional', additional); }} />
+          <FormField label={t('additional.contact2_name')} hint={t('additional.optional')} error={additionalErrors.emergency_contact_2_name}>
+            <input placeholder={t('placeholders.full_name')} class={inputClass} bind:value={additional.emergency_contact_2_name} oninput={() => { additionalErrors.emergency_contact_2_name = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField label="Contact 2 phone" hint="(optional)" error={additionalErrors.emergency_contact_2_phone}>
-            <input placeholder="(555) 123-4567 or +1 555 123 4567" class={inputClass} bind:value={additional.emergency_contact_2_phone} oninput={() => { additionalErrors.emergency_contact_2_phone = undefined; save('additional', additional); }} />
+          <FormField label={t('additional.contact2_phone')} hint={t('additional.optional')} error={additionalErrors.emergency_contact_2_phone}>
+            <input placeholder={t('placeholders.phone_eg')} class={inputClass} bind:value={additional.emergency_contact_2_phone} oninput={() => { additionalErrors.emergency_contact_2_phone = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField classes="md:col-span-2" label="Contact 2 relationship" hint="(optional)" error={additionalErrors.emergency_contact_2_relationship}>
-          <input placeholder="Parent, guardian, etc." class={inputClass} bind:value={additional.emergency_contact_2_relationship} oninput={() => { additionalErrors.emergency_contact_2_relationship = undefined; save('additional', additional); }} />
+          <FormField classes="md:col-span-2" label={t('additional.contact2_relationship')} hint={t('additional.optional')} error={additionalErrors.emergency_contact_2_relationship}>
+          <input placeholder={t('placeholders.relationship_eg')} class={inputClass} bind:value={additional.emergency_contact_2_relationship} oninput={() => { additionalErrors.emergency_contact_2_relationship = undefined; save('additional', additional); }} />
           </FormField>
-          <div class="md:col-span-2 text-sm opacity-70 -mt-1">If you have specific health risks (e.g., epilepsy, severe allergies, asthma), please add a second emergency contact.</div>
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">{t('additional.health_risks_hint')}</div>
 
           <div class="md:col-span-2 h-px bg-[color:var(--color-border-tan)]/70"></div>
  
-          <FormField classes="md:col-span-2" label="Dietary restrictions & allergies">
-            <textarea placeholder="e.g. vegetarian, peanut allergy" class={inputClass} rows="3" bind:value={additional.dietary_restrictions} oninput={() => save('additional', additional)}></textarea>
+          <FormField classes="md:col-span-2" label={t('additional.dietary')}>
+            <textarea placeholder={t('placeholders.dietary_eg')} class={inputClass} rows="3" bind:value={additional.dietary_restrictions} oninput={() => save('additional', additional)}></textarea>
           </FormField>
-          <FormField classes="md:col-span-2" label="Is there anything else we should know to help make this the best experience for you?">
-            <textarea class={inputClass} rows="3" bind:value={additional.additional_accommodations} oninput={() => save('additional', additional)} placeholder="Accessibility needs, scheduling constraints, etc."></textarea>
+          <FormField classes="md:col-span-2" label={t('additional.anything_else')} >
+            <textarea class={inputClass} rows="3" bind:value={additional.additional_accommodations} oninput={() => save('additional', additional)} placeholder={t('placeholders.accessibility_eg')}></textarea>
           </FormField>
 
           <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
 
-            <FormField label="T‑shirt size" hint="(Unisex • US sizing)" required error={additionalErrors.shirt_size}>
+            <FormField label={t('additional.shirt_size')} hint={t('additional.shirt_size_hint')} required error={additionalErrors.shirt_size}>
               <select class={inputClass} bind:value={additional.shirt_size} onchange={() => { additionalErrors.shirt_size = undefined; save('additional', additional); }}>
-                <option value="">Select</option>
+                <option value="">{t('common.select')}</option>
                 <option>S</option><option>M</option><option>L</option><option>XL</option>
               </select>
             </FormField>
 
               <div class="flex justify-center md:justify-start">
-              <img src="/shirt.png" alt="Event t‑shirt" class="ml-4  mt-2 -mb-10 w-32 md:w-40 h-auto rounded-md" />
+              <img src="/shirt.png" alt={t('alt.event_tshirt')} class="ml-4  mt-2 -mb-10 w-32 md:w-40 h-auto rounded-md" />
             </div>
           </div>
         </div>
         <div class="flex justify-between gap-3 mt-4">
-          <Button variant="outline" onclick={back}>Back</Button>
-          <Button onclick={next}>Next</Button>
+          <Button variant="outline" onclick={back}>{t('common.back')}</Button>
+          <Button onclick={next}>{t('common.next')}</Button>
         </div>
       </Section>
     {/if}
@@ -768,25 +769,25 @@
 
 
     {#if current === 'accounts'}
-      <Section title="Account Connections">
+      <Section title={t('accounts.section_title')} >
         <div class="space-y-6">
           <div class="rounded-lg border border-[color:var(--color-border-tan)] p-4">
-            <div class="font-semibold mb-2">GitHub account</div>
+            <div class="font-semibold mb-2">{t('accounts.github')}</div>
             {#if accounts.github_username}
-              <div class="mb-2">✓ Connected as {accounts.github_username}</div>
-              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.github_username=''; toast('Disconnecting GitHub…'); save('accounts', accounts); setTimeout(() => toast.success('GitHub disconnected'), 50); }}>Disconnect</button></div>
+              <div class="mb-2">{t('accounts.connected_as', { username: accounts.github_username })}</div>
+              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.github_username=''; toast(t('accounts.disconnecting_github')); save('accounts', accounts); setTimeout(() => toast.success(t('accounts.github_disconnected')), 50); }}>{t('accounts.disconnect')}</button></div>
             {:else}
-              <div class="mb-2">Not connected</div>
+              <div class="mb-2">{t('accounts.not_connected')}</div>
               <div class="space-y-2">
-                <div>Do you already have a GitHub account?</div>
+                <div>{t('accounts.have_account_q', { service: 'GitHub' })}</div>
                 <div class="flex gap-4">
-                  <label class="flex items-center gap-2"><input type="radio" name="gh-have" value="yes" bind:group={hasGithubAccount}/> Yes</label>
-                  <label class="flex items-center gap-2"><input type="radio" name="gh-have" value="no" bind:group={hasGithubAccount}/> No</label>
+                  <label class="flex items-center gap-2"><input type="radio" name="gh-have" value="yes" bind:group={hasGithubAccount}/> {t('accounts.yes')}</label>
+                  <label class="flex items-center gap-2"><input type="radio" name="gh-have" value="no" bind:group={hasGithubAccount}/> {t('accounts.no')}</label>
                 </div>
                 {#if hasGithubAccount === 'yes'}
-                  <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/github-auth">Sign in with GitHub</a>
+                  <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/github-auth">{t('accounts.sign_in_with', { service: 'GitHub' })}</a>
                 {:else if hasGithubAccount === 'no'}
-                  <div class="text-sm opacity-80">Please <a class="underline" href="https://github.com/signup" target="_blank" rel="noreferrer">create a GitHub account</a> first, then return here and click “Sign in with GitHub”.</div>
+                  <div class="text-sm opacity-80">{t('accounts.please')} <a class="underline" href="https://github.com/signup" target="_blank" rel="noreferrer">{t('accounts.create_account', { service: 'GitHub' })}</a> {t('accounts.then_return_click')} “{t('accounts.sign_in_with', { service: 'GitHub' })}”.</div>
                 {/if}
               </div>
             {/if}
@@ -795,40 +796,40 @@
           <div class="rounded-lg border border-[color:var(--color-border-tan)] p-4">
             <div class="font-semibold mb-2">Itch.io account</div>
             {#if accounts.itch_username}
-              <div class="mb-2">✓ Connected as {accounts.itch_username}</div>
-              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.itch_username=''; toast('Disconnecting Itch.io…'); save('accounts', accounts); setTimeout(() => toast.success('Itch.io disconnected'), 50); }}>Disconnect</button></div>
+              <div class="mb-2">{t('accounts.connected_as', { username: accounts.itch_username })}</div>
+              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.itch_username=''; toast(t('accounts.disconnecting_itch')); save('accounts', accounts); setTimeout(() => toast.success(t('accounts.itch_disconnected')), 50); }}>{t('accounts.disconnect')}</button></div>
             {:else}
-              <div class="mb-2">Not connected</div>
+              <div class="mb-2">{t('accounts.not_connected')}</div>
               <div class="space-y-2">
-                <div>Do you already have an Itch.io account?</div>
+                <div>{t('accounts.have_account_q', { service: 'Itch.io' })}</div>
                 <div class="flex gap-4">
-                  <label class="flex items-center gap-2"><input type="radio" name="itch-have" value="yes" bind:group={hasItchAccount}/> Yes</label>
-                  <label class="flex items-center gap-2"><input type="radio" name="itch-have" value="no" bind:group={hasItchAccount}/> No</label>
+                  <label class="flex items-center gap-2"><input type="radio" name="itch-have" value="yes" bind:group={hasItchAccount}/> {t('accounts.yes')}</label>
+                  <label class="flex items-center gap-2"><input type="radio" name="itch-have" value="no" bind:group={hasItchAccount}/> {t('accounts.no')}</label>
                 </div>
                 {#if hasItchAccount === 'yes'}
-                  <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/itch-auth">Sign in with Itch.io</a>
+                  <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/itch-auth">{t('accounts.sign_in_with', { service: 'Itch.io' })}</a>
                 {:else if hasItchAccount === 'no'}
-                  <div class="text-sm opacity-80">Please <a class="underline" href="https://itch.io/register" target="_blank" rel="noreferrer">create an Itch.io account</a> first, then return here and click “Sign in with Itch.io”.</div>
+                  <div class="text-sm opacity-80">{t('accounts.please')} <a class="underline" href="https://itch.io/register" target="_blank" rel="noreferrer">{t('accounts.create_account', { service: 'Itch.io' })}</a> {t('accounts.then_return_click')} “{t('accounts.sign_in_with', { service: 'Itch.io' })}”.</div>
                 {/if}
               </div>
             {/if}
           </div>
 
           <div class="flex justify-between gap-3 mt-2">
-            <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next} disabled={!accounts.github_username || !accounts.itch_username}>Next</Button>
+            <Button variant="outline" onclick={back}>{t('common.back')}</Button>
+            <Button onclick={next} disabled={!accounts.github_username || !accounts.itch_username}>{t('common.next')}</Button>
           </div>
         </div>
       </Section>
     {/if}
 
     {#if current === 'review'}
-      <Section title="Almost Done! Review your information:">
+      <Section title={t('review.title')}>
         <div class="space-y-5 text-[15px]">
           <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
           <div class="group relative">
             <div class="flex items-center gap-2">
-              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='info'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='info'; }}}>Personal Information</div>
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='info'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='info'; }}}>{t('review.personal_info')}</div>
               <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit personal information" onclick={() => current='info'}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
@@ -836,52 +837,52 @@
             <div class="mt-2 opacity-90">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <div class="opacity-70 text-sm">First name</div>
+                  <div class="opacity-70 text-sm">{t('review.first_name')}</div>
                   <div>{info.first_name}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">Last name</div>
+                  <div class="opacity-70 text-sm">{t('review.last_name')}</div>
                   <div>{info.last_name}</div>
                 </div>
                 {#if info.preferred_name}
                 <div class="md:col-span-2">
-                  <div class="opacity-70 text-sm">Preferred name</div>
+                  <div class="opacity-70 text-sm">{t('review.preferred_name')}</div>
                   <div>{info.preferred_name}</div>
                 </div>
                 {/if}
                 <div>
-                  <div class="opacity-70 text-sm">Email</div>
+                  <div class="opacity-70 text-sm">{t('review.email')}</div>
                   <div class="break-all">{info.email}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">Phone</div>
+                  <div class="opacity-70 text-sm">{t('review.phone')}</div>
                   <div>{formatPhone(info.phone)}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">Address</div>
+                  <div class="opacity-70 text-sm">{t('review.address')}</div>
                   <div>{info.address_1}</div>
                   <div>{info.address_2 || '—'}</div>
                   <div>{info.city}, {info.state} {info.zip_code}</div>
                   <div>{info.country || ''}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">DOB</div>
+                  <div class="opacity-70 text-sm">{t('review.dob')}</div>
                   <div>{info.dob}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">Shirt size</div>
+                  <div class="opacity-70 text-sm">{t('review.shirt_size')}</div>
                   <div>{sizeWord(additional.shirt_size)}</div>
                 </div>
                 <div>
-                  <div class="opacity-70 text-sm">Pronouns</div>
+                  <div class="opacity-70 text-sm">{t('review.pronouns')}</div>
                   <div>{(additional.pronouns||[]).join(', ') || '—'}</div>
                 </div>
                 <div class="md:col-span-2">
-                  <div class="opacity-70 text-sm">Dietary restrictions</div>
+                  <div class="opacity-70 text-sm">{t('review.dietary')}</div>
                   <div>{additional.dietary_restrictions || '—'}</div>
                 </div>
                 <div class="md:col-span-2">
-                  <div class="opacity-70 text-sm">Notes</div>
+                  <div class="opacity-70 text-sm">{t('review.notes')}</div>
                   <div>{additional.additional_accommodations || '—'}</div>
                 </div>
               </div>
@@ -890,7 +891,7 @@
           <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
           <div class="group relative">
             <div class="flex items-center gap-2">
-              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='additional'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='additional'; }}}>Emergency Contacts</div>
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='additional'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='additional'; }}}>{t('additional.emergency_contacts')}</div>
               <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit emergency contacts" onclick={() => current='additional'}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
@@ -898,22 +899,22 @@
             {#if (additional.emergency_contact_2_name?.trim() || additional.emergency_contact_2_phone?.trim() || additional.emergency_contact_2_relationship?.trim())}
             <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
-                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
-                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
-                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+                <div><span class="opacity-70">{t('ticket.name')}:</span> {additional.emergency_contact_1_name || '—'}</div>
+                <div><span class="opacity-70">{t('review.phone')}:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
+                <div><span class="opacity-70">{t('review.relationship')}:</span> {additional.emergency_contact_1_relationship || '—'}</div>
               </div>
               <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
-                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_2_name || '—'}</div>
-                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_2_phone) || '—'}</div>
-                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_2_relationship || '—'}</div>
+                <div><span class="opacity-70">{t('ticket.name')}:</span> {additional.emergency_contact_2_name || '—'}</div>
+                <div><span class="opacity-70">{t('review.phone')}:</span> {formatPhone(additional.emergency_contact_2_phone) || '—'}</div>
+                <div><span class="opacity-70">{t('review.relationship')}:</span> {additional.emergency_contact_2_relationship || '—'}</div>
               </div>
             </div>
             {:else}
             <div class="mt-2 grid grid-cols-1 gap-4">
               <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
-                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
-                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
-                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+                <div><span class="opacity-70">{t('ticket.name')}:</span> {additional.emergency_contact_1_name || '—'}</div>
+                <div><span class="opacity-70">{t('review.phone')}:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
+                <div><span class="opacity-70">{t('review.relationship')}:</span> {additional.emergency_contact_1_relationship || '—'}</div>
               </div>
             </div>
             {/if}
@@ -921,15 +922,15 @@
           <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
           <div class="group relative">
             <div class="flex items-center gap-2">
-              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='accounts'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='accounts'; }}}>Accounts</div>
+              <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='accounts'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='accounts'; }}}>{t('review.accounts')}</div>
               <button type="button" class="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Edit accounts" onclick={() => current='accounts'}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
             </div>
             <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 opacity-90">
-            <div><span class="opacity-70">Connected GitHub Account:</span> {accounts.github_username || '—'}</div>
-            <div><span class="opacity-70">Connected Itch.io Account:</span> {accounts.itch_username || '—'}</div>
-              <div class="md:col-span-2"><span class="opacity-70">Email:</span> {info.email}</div>
+            <div><span class="opacity-70">{t('review.connected_github')}</span> {accounts.github_username || '—'}</div>
+            <div><span class="opacity-70">{t('review.connected_itch')}</span> {accounts.itch_username || '—'}</div>
+              <div class="md:col-span-2"><span class="opacity-70">{t('review.email')}:</span> {info.email}</div>
               </div>
           </div>
           <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
@@ -937,20 +938,20 @@
           <!-- Waiver status section -->
           <div class="group relative">
            <div class="flex items-center gap-2">
-             <div class="font-semibold">Waiver</div>
+             <div class="font-semibold">{t('waiver.section_title')}</div>
           </div>
           <div class="mt-2 opacity-90">
             {#if waiverDone || fields.waiver_completed}
-             <div class="text-green-700">✓ Waiver completed</div>
+             <div class="text-green-700">{t('waiver.completed')}</div>
            {:else}
               <div class="text-red-700">
-                  ✗ Waiver not completed — you must
+                  {t('waiver.not_completed_prefix')}
                   <button type="button" class="underline cursor-pointer"
                     onclick={() => { docusealUrl ? (window.location.href = docusealUrl) : (current='waiver'); }}
                     onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ docusealUrl ? (window.location.href = docusealUrl) : (current='waiver'); }}}
-                    aria-label="Complete the waiver"
-                  >complete the waiver</button>
-                  to continue.
+                    aria-label={t('waiver.complete_aria')}
+                  >{t('waiver.complete_aria')}</button>
+                  {t('waiver.to_continue')}
                 </div>
               {/if}
             </div>
@@ -960,13 +961,13 @@
           <div class="mt-2">
            <label class="flex items-start gap-2 cursor-pointer">
            <input type="checkbox" class="mt-1" bind:checked={additional.attendance_confirmation} onchange={saveAttendance} />
-           <span class="font-semibold">I understand I’m signing up for an in‑person event and will need to attend this event in‑person to participate. <span class="text-red-600">*</span></span>
+           <span class="font-semibold">{t('review.attendance_ack')} <span class="text-red-600">*</span></span>
            </label>
             </div>
-            <div class="text-sm opacity-80 mt-4">By clicking Submit, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
+            <div class="text-sm opacity-80 mt-4">{t('review.submit_disclaimer')}</div>
             <div class="flex justify-between gap-3 mt-2">
-            <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next} disabled={!additional.attendance_confirmation}>Submit!</Button>
+            <Button variant="outline" onclick={back}>{t('common.back')}</Button>
+            <Button onclick={next} disabled={!additional.attendance_confirmation}>{t('common.submit')}</Button>
             </div>
         </div>
       </Section>
@@ -976,23 +977,23 @@
 
     {#if current === 'complete'}
       <div class="bg-white/10 rounded-xl border border-[color:var(--color-border-tan)] p-5 shadow-sm">
-        <h2 class="text-2xl font-semibold">Next steps</h2>
-        <p class="opacity-80 mt-2 mb-4">Want a head start, <i>and</i> some prizes? Spend an hour following our tutorial on how to make a game and get a free sticker sheet + get entered into a raffle for bigger prizes.</p>
+        <h2 class="text-2xl font-semibold">{t('complete.next_steps')}</h2>
+        <p class="opacity-80 mt-2 mb-4">{@html t('complete.promo')}</p>
         <a href="https://daydream.jumpstart.hackclub.com" target="_blank" rel="noreferrer" class="group relative block w-full rounded-lg overflow-hidden p-3 md:p-4" style="background:#152c6f">
           <div class="pointer-events-none absolute inset-0 rounded-lg md:hidden" style="box-shadow: inset 0 0 24px 8px rgba(255,255,255,0.28), inset 0 0 48px 16px rgba(255,255,255,0.12);"></div>
           <div class="pointer-events-none absolute inset-0 rounded-lg hidden md:block" style="box-shadow: inset 0 0 40px 12px rgba(255,255,255,0.35), inset 0 0 80px 24px rgba(255,255,255,0.18);"></div>
-          <img src="/jumpstart.gif" alt="Jumpstart tutorial" class="relative w-full h-auto rounded-md transform transition-transform duration-300 group-hover:scale-105" />
+          <img src="/jumpstart.gif" alt={t('alt.jumpstart_tutorial')} class="relative w-full h-auto rounded-md transform transition-transform duration-300 group-hover:scale-105" />
         </a>
       </div>
-      <Section title="Your e‑ticket">
+      <Section title={t('complete.your_ticket')}>
         <div class="space-y-4"> 
-          <p>You're all checked in!</p>
-          <p class="opacity-80">Show this ticket at check‑in. We also emailed a copy of your ticket to you.</p>
+          <p>{t('complete.checked_in')}</p>
+          <p class="opacity-80">{t('complete.show_ticket')}</p>
           <div class="w-full max-w-[560px] mx-auto">
-            <iframe title="Your Daydream ticket" class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(attendee.record.id)}`}></iframe>
+            <iframe title={t('alt.daydream_ticket_iframe')} class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(attendee.record.id)}`}></iframe>
           </div>
           <div class="flex justify-center">
-            <a class="inline-block rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(attendee.record.id)}`} target="_blank" rel="noreferrer">Open ticket in new tab</a>
+            <a class="inline-block rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(attendee.record.id)}`} target="_blank" rel="noreferrer">{t('complete.open_ticket_new_tab')}</a>
           </div>
         </div>
       </Section>

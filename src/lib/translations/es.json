@@ -1,0 +1,205 @@
+{
+  "app": {
+    "title": "Registro de Daydream"
+  },
+  "common": {
+    "next": "Siguiente",
+    "back": "Atrás",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "submit": "¡Enviar!",
+    "select": "Seleccionar",
+    "redirecting": "Redirigiendo…",
+    "open_in_new_tab": "Abrir en una nueva pestaña",
+    "loading_events": "Cargando eventos…"
+  },
+  "status": {
+    "saving": "Guardando…",
+    "saved": "Cambios guardados",
+    "save_failed": "Error al guardar: {message}"
+  },
+  "errors": {
+    "unknown": "Error desconocido",
+    "events_load": "No se pudieron cargar los eventos. Por favor, inténtalo de nuevo.",
+    "change_event": "No se pudo cambiar el evento. Por favor, inténtalo de nuevo."
+  },
+  "session": {
+    "invalid": "Sesión de registro inválida o expirada. Por favor, utiliza tu enlace de correo electrónico.",
+    "checking_in_as": "Registrándose como {name}",
+    "logout": "Cerrar sesión"
+  },
+  "picker": {
+    "search_placeholder": "Buscar por evento, ubicación, formato o fecha"
+  },
+  "alt": {
+    "event_tshirt": "Camiseta del evento",
+    "ticket_qr": "QR del ticket",
+    "jumpstart_tutorial": "Tutorial de inicio rápido",
+    "daydream_ticket_iframe": "Tu ticket de Daydream"
+  },
+  "event": {
+    "checking_in_for": "Te estás registrando para:",
+    "registered_for": "Estás registrado para",
+    "edit_event": "Cambiar evento",
+    "estimated_duration": "Esto debería tomar alrededor de {minutes} minutos.",
+    "intro": "Pasaremos por algunos pasos para confirmar tus datos para Daydream.",
+    "bullet_food": "Preguntaremos sobre restricciones dietéticas para poder planificar la comida en consecuencia.",
+    "bullet_shirt": "Obtendremos tu talla de camiseta para recogerla en el evento.",
+    "bullet_contacts": "Recopilaremos información de contacto de emergencia en caso de que necesitemos comunicarnos con alguien.",
+    "bullet_software": "Conectaremos las cuentas que usarás durante el evento.",
+    "encouragement": "Siempre puedes volver y terminar más tarde; tu progreso se guardará."
+  },
+  "steps": {
+    "info": "Verificar información",
+    "additional": "Información adicional",
+    "waiver": "Exención",
+    "accounts": "Cuentas",
+    "review": "Revisar",
+    "complete": "Completar"
+  },
+  "sizes": {
+    "S": "Pequeño",
+    "M": "Mediano",
+    "L": "Grande",
+    "XL": "Extra Grande"
+  },
+  "pronouns": {
+    "he_him": "él / lo",
+    "she_her": "ella / la",
+    "they_other": "ellos / ellas o otro"
+  },
+  "info": {
+    "section_title": "Información Personal",
+    "section_desc": "Por favor, confirma que tu información es correcta.",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
+    "preferred_name": "Nombre preferido",
+    "pronouns": "Pronombres",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "dob": "Fecha de nacimiento",
+    "address1": "Línea de dirección 1",
+    "address2": "Línea de dirección 2",
+    "city": "Ciudad",
+    "state": "Estado",
+    "country": "País",
+    "zip": "Código postal",
+    "youll_need_email": "Necesitarás acceso a este correo electrónico durante el evento.",
+    "edit_email": "Editar correo electrónico",
+    "cancel_email_update": "Cancelar actualización de correo electrónico",
+    "new_email": "Nuevo correo electrónico",
+    "update_email": "Actualizar correo electrónico",
+    "we_will_send_code": "Enviaremos un código de 6 dígitos a esta dirección.",
+    "verification_sent": "Código de verificación enviado a {email}. Revisa tu bandeja de entrada.",
+    "invalid_phone": "Número de teléfono inválido",
+    "invalid_phone_short": "Teléfono inválido",
+    "invalid_email": "Correo electrónico inválido",
+    "required": "Requerido"
+  },
+  "placeholders": {
+    "full_name": "Nombre completo",
+    "phone_eg": "(555) 123-4567 o +1 555 123 4567",
+    "relationship_eg": "Padre, tutor, etc.",
+    "dietary_eg": "p. ej. vegetariano, alergia al maní",
+    "accessibility_eg": "Necesidades de accesibilidad, restricciones de programación, etc."
+  },
+  "additional": {
+    "section_title": "Información Adicional",
+    "emergency_contacts": "Contactos de emergencia",
+    "emergency_contacts_hint": "Esta debe ser alguien que pueda responder de inmediato y ayudar en una emergencia (un padre/tutor o adulto de confianza).",
+    "contact1_name": "Nombre del contacto 1",
+    "contact1_phone": "Teléfono del contacto 1",
+    "contact1_relationship": "Relación del contacto 1",
+    "contact2_name": "Nombre del contacto 2",
+    "contact2_phone": "Teléfono del contacto 2",
+    "contact2_relationship": "Relación del contacto 2",
+    "optional": "(opcional)",
+    "health_risks_hint": "Si tienes riesgos de salud específicos (p. ej., epilepsia, alergias severas, asma), por favor añade un segundo contacto de emergencia.",
+    "dietary": "Restricciones dietéticas y alergias",
+    "anything_else": "¿Hay algo más que debamos saber para ayudar a que esta sea la mejor experiencia para ti?",
+    "shirt_size": "Tamaño de camiseta",
+    "shirt_size_hint": "(Unisex • Tallas de EE. UU.)"
+  },
+  "accounts": {
+    "section_title": "Conexiones de Cuenta",
+    "github": "Cuenta de GitHub",
+    "connected_as": "✓ Conectado como {username}",
+    "disconnect": "Desconectar",
+    "not_connected": "No conectado",
+    "have_account_q": "¿Ya tienes una cuenta de {service}?",
+    "yes": "Sí",
+    "no": "No",
+    "sign_in_with": "Iniciar sesión con {service}",
+    "please": "Por favor",
+    "create_account": "crea una cuenta de {service}",
+    "then_return_click": "primero, luego vuelve aquí y haz clic",
+    "connecting_github": "Conectando tu cuenta de GitHub…",
+    "connecting_itch": "Conectando tu cuenta de Itch.io…",
+    "github_connected_toast": "GitHub conectado con éxito",
+    "itch_connected_toast": "Itch.io conectado con éxito",
+    "disconnecting_github": "Desconectando GitHub…",
+    "github_disconnected": "GitHub desconectado",
+    "disconnecting_itch": "Desconectando Itch.io…",
+    "itch_disconnected": "Itch.io desconectado"
+  },
+  "waiver": {
+    "section_title": "Exención",
+    "open_message": "Por favor, haz clic en el botón de abajo para abrir la exención. Cuando termines, serás devuelto aquí automáticamente.",
+    "completed": "✓ Exención completada",
+    "open_button": "Abrir exención",
+    "not_configured": "El formulario de exención no está configurado. Establece PUBLIC_DOCUSEAL_EMBED_URL en tu entorno.",
+    "skip_for_now": "Saltar por ahora",
+    "must_complete": "✗ Exención no completada — debes <button>completar la exención</button> para continuar.",
+    "not_completed_prefix": "✗ Exención no completada — debes",
+    "complete_aria": "completar la exención",
+    "to_continue": "para continuar.",
+    "complete_before_continuing": "Por favor, completa la exención antes de continuar",
+    "verify_failed": "No se pudo verificar la exención."
+  },
+  "email": {
+    "verifying_code": "Verificando código…",
+    "updated_success": "Correo electrónico actualizado con éxito",
+    "verification_failed": "Verificación fallida",
+    "sending": "Enviando correo electrónico…",
+    "sent": "Correo electrónico enviado",
+    "send_failed": "Error al enviar el correo electrónico de verificación"
+  },
+  "review": {
+    "title": "¡Casi Listo! Revisa tu información:",
+    "personal_info": "Información Personal",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
+    "preferred_name": "Nombre preferido",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "address": "Dirección",
+    "dob": "Fecha de nacimiento",
+    "shirt_size": "Tamaño de camiseta",
+    "pronouns": "Pronombres",
+    "dietary": "Restricciones dietéticas",
+    "notes": "Notas",
+    "accounts": "Cuentas",
+    "relationship": "Relación",
+    "connected_github": "Cuenta de GitHub Conectada:",
+    "connected_itch": "Cuenta de Itch.io Conectada:",
+    "attendance_ack": "Entiendo que me estoy inscribiendo para un evento en persona y necesitaré asistir a este evento en persona para participar.",
+    "submit_disclaimer": "Al hacer clic en Enviar, confirmas que tu información es precisa. Después de la presentación, es posible que no puedas editarla más."
+  },
+  "complete": {
+    "next_steps": "Próximos pasos",
+    "promo": "¿Quieres un comienzo rápido, <i>y</i> algunos premios? Dedica una hora a seguir nuestro tutorial sobre cómo hacer un juego y obtén una hoja de pegatinas gratis + entra en un sorteo para premios más grandes.",
+    "your_ticket": "Tu e‑ticket",
+    "checked_in": "¡Ya estás registrado!",
+    "show_ticket": "Muestra este ticket en el registro. También te enviamos una copia de tu ticket por correo electrónico.",
+    "open_ticket_new_tab": "Abrir ticket en una nueva pestaña"
+  },
+  "home": {
+    "blurb": "Deberías haber recibido un enlace en tu correo electrónico que puedes usar para registrarte en Daydream."
+  },
+  "ticket": {
+    "not_found": "Ticket no encontrado.",
+    "fallback_event_name": "Daydream",
+    "name": "Nombre",
+    "email": "Correo electrónico"
+  }
+}

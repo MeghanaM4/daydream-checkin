@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   let state: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
   let lastVisibleState: 'saving' | 'saved' | 'error' = 'saved';
   let message = '';
@@ -26,13 +27,13 @@
   role="status" class:opacity-0={state === 'idle'} class:opacity-100={state !== 'idle'} onmouseenter={() => { hovering = true; clearTimeout(hideTimer); }} onmouseleave={() => { hovering = false; scheduleHide(); }}>
   {#if (state === 'saving') || (state === 'idle' && lastVisibleState === 'saving')}
     <span class="size-3 animate-spin rounded-full border-2 border-[color:var(--color-button-pink)] border-t-transparent"></span>
-    <span>Saving…</span>
+    <span>{t('status.saving')}</span>
   {:else if (state === 'saved') || (state === 'idle' && lastVisibleState === 'saved')}
     <span class="inline-block size-3 bg-[color:var(--color-turtle-turquoise)] rounded-full"></span>
-    <span>Changes saved</span>
+    <span>{t('status.saved')}</span>
   {:else}
     <!-- error or fading from error -->
     <span class="inline-block size-3 bg-red-500 rounded-full"></span>
-    <span>Save failed: {message || 'Unknown error'}</span>
+    <span>{t('status.save_failed', { message: message || t('errors.unknown') })}</span>
   {/if}
 </div>
