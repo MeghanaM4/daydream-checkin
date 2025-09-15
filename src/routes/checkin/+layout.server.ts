@@ -2,17 +2,15 @@ import type { LayoutServerLoad } from './$types';
 import { getAttendeeByToken } from '$lib/server/airtable';
 import { redirect } from '@sveltejs/kit';
 
+import { PUBLIC_DOCUSEAL_EMBED_URL, PUBLIC_BASE_URL } from '$env/static/public';
+
 export const load: LayoutServerLoad = async ({ cookies }) => {
   const token = cookies.get('checkin_token');
   if (!token) {
-    return { attendee: null };
+    return { attendee: null, docusealUrl: PUBLIC_DOCUSEAL_EMBED_URL, baseUrl: PUBLIC_BASE_URL } as any;
   }
   const data = await getAttendeeByToken(token);
 
-  // If check-in already completed, send directly to the ticket page
-  if (data?.record?.fields?.checkin_completed && data?.record?.id) {
-    throw redirect(302, `/ticket/${encodeURIComponent(data.record.id)}`);
-  }
 
   let initialStep: 'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'complete' = 'info';
   if (data?.record?.fields) {
@@ -28,18 +26,22 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
     const ec1Ok = nonEmpty(f.emergency_contact_1_name) && phoneOk(f.emergency_contact_1_phone) && nonEmpty(f.emergency_contact_1_relationship);
     const additionalComplete = sizeOk && ec1Ok;
     const accountsComplete = nonEmpty(f.github_username) && nonEmpty(f.itch_username);
+    const waiverDone = !!f.waiver_completed;
     const completed = !!f.checkin_completed;
 
     initialStep = (!infoComplete) ? 'info'
       : (!additionalComplete) ? 'additional'
       : (!accountsComplete) ? 'accounts'
+      : (!waiverDone) ? 'waiver'
       : (!completed) ? 'review'
       : 'complete';
 
     const ck = cookies.get('checkin_step');
     const allowed = ['info','additional','waiver','accounts','review','complete'];
-    if (ck && allowed.includes(ck)) initialStep = ck as any;
+    // If already completed, force 'complete' regardless of cookie. Otherwise honor cookie when valid.
+    if (completed) initialStep = 'complete';
+    else if (ck && allowed.includes(ck)) initialStep = ck as any;
   }
 
-  return { attendee: data, initialStep };
+  return { attendee: data, initialStep, docusealUrl: PUBLIC_DOCUSEAL_EMBED_URL, baseUrl: PUBLIC_BASE_URL } as any;
 };

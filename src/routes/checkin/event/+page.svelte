@@ -2,6 +2,8 @@
   import EventCard from '$lib/components/EventCard.svelte';
   import Button from '$lib/components/Button.svelte';
   import { onMount } from 'svelte';
+  import CloudParticles from '$lib/components/CloudParticles.svelte';
+  import { t } from '$lib/i18n';
   let { data } = $props();
   let attendee = $state(data?.attendee);
   let showPicker = $state(false);
@@ -20,12 +22,12 @@
       if (res.ok) {
         const j = await res.json();
         if (j?.ok) events = j.events || [];
-        else eventsError = 'Failed to load events';
+        else eventsError = t('errors.events_load');
       } else {
-        eventsError = 'Failed to load events';
+        eventsError = t('errors.events_load');
       }
     } catch {
-      eventsError = 'Failed to load events';
+      eventsError = t('errors.events_load');
     }
   }
 
@@ -55,47 +57,53 @@
         showPicker = false;
       }
     } else {
-      eventsError = 'Failed to change event. Please try again.';
+      eventsError = t('errors.change_event');
     }
   }
+
+  onMount(() => {
+    if (attendee?.record?.fields?.checkin_completed) {
+      window.location.replace('/checkin');
+    }
+  });
 </script>
 
 {#if !attendee}
-  <div class="p-6">Invalid or expired check-in session. Please use your email link.</div>
+  <div class="p-6">{t('session.invalid')}</div>
 {:else}
   <div class="space-y-6 max-w-3xl mx-auto">
-    <h1 class="text-3xl font-semibold">You’re checking in for</h1>
+    <h1 class="text-3xl font-semibold">{t('event.checking_in_for')}</h1>
     <div class="relative">
       <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
       <div class="absolute right-3 bottom-3">
-        <Button variant="outline" onclick={openPicker}>Edit event</Button>
+        <Button variant="outline" onclick={openPicker}>{t('event.edit_event')}</Button>
       </div>
     </div>
 
     <div class="text-sm opacity-80 flex items-center gap-2 -mt-2">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-80"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      <span>Estimated duration: 5 minutes</span>
+      <span>{t('event.estimated_duration', { minutes: 5 })}</span>
     </div>
 
     <div class="space-y-2 opacity-90">
-      <p>We’ll walk you through a quick check‑in to get everything set for the event. Here's what you can expect:</p>
+      <p>{t('event.intro')}</p>
       <div class="space-y-2 my-4">
-        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-[color:var(--color-bg-cream)]"><span class="opacity-80 mr-2">•</span> We'll ask about your dietary restrictions to make sure we have enough free food at the event.</div>
-        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 relative lg:pr-[200px] bg-[color:var(--color-bg-cream)]">
-          <span class="opacity-80 mr-2">•</span> This helps us make sure we have a t‑shirt in your size.
-          <img src="/shirt.png" alt="Event t‑shirt" class="hidden lg:block absolute top-1/2 -translate-y-1/2 right-[-160px] w-[220px] h-auto rounded-md" />
+        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-white/70"><span class="opacity-80 mr-2">•</span> {t('event.bullet_food')}</div>
+        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 relative lg:pr-[200px] bg-white/70">
+          <span class="opacity-80 mr-2">•</span> {t('event.bullet_shirt')}
+          <img src="/shirt.png" alt={t('alt.event_tshirt')} class="hidden lg:block absolute top-1/2 -translate-y-1/2 right-[-160px] w-[220px] h-auto rounded-md drop-shadow-lg" />
         </div>
         <div class="lg:hidden px-3 -my-8">
-          <img src="/shirt.png" alt="Event t‑shirt" class="w-full max-w-[360px] mx-auto h-auto rounded-md -z-20 relative" />
+          <img src="/shirt.png" alt={t('alt.event_tshirt')} class="w-full max-w-[360px] mx-auto h-auto rounded-md -z-20 relative drop-shadow-md" />
         </div>
-        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-[color:var(--color-bg-cream)]"><span class="opacity-80 mr-2">•</span> We'll collect some emergency contact details so we can reach someone if needed.</div>
-        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-[color:var(--color-bg-cream)]"><span class="opacity-80 mr-2">•</span> This helps <i>you</i> ensure you have the right software set up before the event.</div>
+        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-white/70"><span class="opacity-80 mr-2">•</span> {t('event.bullet_contacts')}</div>
+        <div class="border border-[color:var(--color-border-tan)] rounded-md px-6 py-4 bg-white/70"><span class="opacity-80 mr-2">•</span> {t('event.bullet_software')}</div>
       </div>
-      <p>Even if you're not sure if you're gonna attend, <strong>you should still fill out this form!</strong> you're not taking a spot from someone else by completing this.</p>
+      <p>{t('event.encouragement')}</p>
     </div>
 
     <div class="flex justify-end gap-3">
-      <Button onclick={onclickContinue}>Next</Button>
+      <Button onclick={onclickContinue}>{t('common.next')}</Button>
     </div>
     
     {#if showPicker}
@@ -106,7 +114,7 @@
         <input
         bind:this={inputEl}
         class="w-full rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2"
-        placeholder="Search events…"
+        placeholder={t('picker.search_placeholder')}
         bind:value={query}
         onkeydown={(e)=>{
             const list = events.filter(ev => {
@@ -140,14 +148,17 @@
               </button>
             {/each}
             {#if !events.length && !eventsError}
-              <div class="text-sm opacity-70 px-3 py-2">Loading events…</div>
+              <div class="text-sm opacity-70 px-3 py-2">{t('common.loading_events')}</div>
             {/if}
           </div>
           <div class="p-2 border-t border-[color:var(--color-border-tan)]/70 flex justify-end">
-            <Button variant="outline" onclick={() => showPicker=false}>Close</Button>
+            <Button variant="outline" onclick={() => showPicker=false}>{t('common.close')}</Button>
           </div>
         </div>
       </div>
     {/if}
-  </div>
-{/if}
+    </div>
+    {/if}
+
+<div class="h-[80px]"></div>
+<CloudParticles height={120} />

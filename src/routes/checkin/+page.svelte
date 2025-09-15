@@ -5,6 +5,7 @@
   // Progress list removed in favor of a progress bar
   import Button from '$lib/components/Button.svelte';
   import FormField from '$lib/components/FormField.svelte';
+  import CloudParticles from '$lib/components/CloudParticles.svelte';
   import type { AttendeeFields } from '$lib/types';
   import { toast } from 'svelte-sonner';
   import { fade, fly } from 'svelte/transition';
@@ -13,6 +14,8 @@
   let { data } = $props();
   const attendee = data?.attendee;
   const fields: AttendeeFields = attendee?.record?.fields ?? {} as any;
+  const docusealUrl: string = (data as any)?.docusealUrl || '';
+  const baseUrl: string = (data as any)?.baseUrl || '';
   
   // Email inline edit state
   let emailMode = $state<'idle' | 'compose' | 'verify' | 'flash'>('idle');
@@ -65,8 +68,8 @@
     const map: Record<string, number> = {
       info: 35,
       additional: 62,
-      waiver: 78,
-      accounts: 92,
+      accounts: 78,
+      waiver: 92,
       review: 100,
       complete: 100
     };
@@ -114,6 +117,10 @@
     github_username: fields.github_username || '',
     itch_username: fields.itch_username || ''
   });
+
+  // Waiver status via cookie set after DocuSeal redirect
+  let waiverDone = $state<boolean>(!!fields.waiver_completed);
+
 
   // inline validation errors
   let infoErrors = $state<{
@@ -312,6 +319,7 @@
     }
   }
 
+
   async function sendUpdateEmail() {
     emailError = undefined;
     if (!pendingEmail || !/\S+@\S+\.[\w-]+/.test(pendingEmail)) {
@@ -409,11 +417,16 @@
     showSaving();
     // Compute next step and move immediately; save runs in background
     const nextStep = current === 'info' ? 'additional'
-      : current === 'additional' ? 'waiver'
-      : current === 'waiver' ? 'accounts'
-      : current === 'accounts' ? 'review'
-      : current === 'review' ? 'complete'
+      : current === 'additional' ? 'accounts'
+      : current === 'accounts' ? 'waiver'
+      : current === 'waiver' ? 'review'
+      : current === 'review' ? (waiverDone ? 'complete' : 'review')
       : current;
+
+    if (current === 'review' && !(waiverDone || !!fields.waiver_completed)) {
+      toast.error('Please complete the waiver before continuing');
+      return;
+    }
     current = nextStep as any;
 
     let retried = false;
@@ -450,10 +463,9 @@
   function next() { finalizeAndNext(); }
   function back() {
     if (current === 'additional') current = 'info';
-    else if (current === 'waiver') current = 'additional';
-    /* attendance step removed */
     else if (current === 'accounts') current = 'additional';
-    else if (current === 'review') current = 'accounts';
+    else if (current === 'waiver') current = 'accounts';
+    else if (current === 'review') current = 'waiver';
   }
 
 
@@ -481,7 +493,31 @@
     document.cookie = `checkin_step=${encodeURIComponent(step)}; path=/; max-age=${60 * 60 * 24 * 30}`;
   }
   onMount(() => {
-    console.log(countryData)
+    // Capture waiver completion via URL param
+    const url = new URL(window.location.href);
+    const waiverParam = url.searchParams.get('waiver');
+    const waiverIsDone = (waiverParam === 'done') || url.searchParams.has('waiverDone');
+    if (waiverIsDone) {
+      // Verify server-side and persist (fallback marks complete when API key missing)
+      fetch('/api/waiver-verify', { method: 'POST' }).then(async (r) => {
+        try {
+          const j = await r.json();
+          if (j?.ok && j.completed) {
+            waiverDone = true;
+            fields.waiver_completed = true as any;
+            toast.success('Waiver completed');
+          } else {
+            toast.error('Could not verify waiver yet. Please wait a moment and try again.');
+          }
+        } catch {}
+      }).catch(() => toast.error('Could not verify waiver.'));
+      url.searchParams.delete('waiver');
+      url.searchParams.delete('waiverDone');
+      window.history.replaceState({}, '', url.toString());
+    } else {
+      waiverDone = !!fields.waiver_completed || getCookie('waiver_done') === '1';
+    }
+
     // Show OAuth connect toast if present
     const ck = getCookie('oauth_connected');
     if (ck === 'github') {
@@ -505,13 +541,25 @@
     setStepPersistence(current);
     if (current === 'complete') complete();
   });
+
+  // Hide layout header on complete; show otherwise
+  $effect(() => {
+    const el = document.querySelector('[data-checkin-header]') as HTMLElement | null;
+    if (!el) return;
+    if (current === 'complete') el.style.display = 'none';
+    else el.style.display = '';
+  });
 </script>
 
 {#if !attendee}
   <div class="p-6">Invalid or expired check-in session. Please use your email link.</div>
 {:else}
   <div class="space-y-6">
-    <div class="w-full h-2 rounded-md bg-[color:var(--color-border-tan)]/40 overflow-hidden"><div class="h-full bg-[color:var(--color-button-pink)] transition-[width] duration-300" style={`width: ${progressPct()}%`}></div></div>
+    {#if current === 'complete'}
+      <button type="button" class="fixed right-6 top-5 underline cursor-pointer" onclick={() => (window.location.href = '/checkin/logout')}>Log out</button>
+    {:else}
+      <div class="w-full h-2 rounded-md bg-[color:var(--color-border-tan)]/40 overflow-hidden"><div class="h-full bg-[color:var(--color-button-pink)] transition-[width] duration-300" style={`width: ${progressPct()}%`}></div></div>
+    {/if}
 
 
     {#if current === 'info'}
@@ -639,10 +687,21 @@
     {#if current === 'waiver'}
       <Section title="Waiver">
         <div class="space-y-3">
-          <p class="opacity-80">This section will include required waiver(s). For now, please click Next to continue.</p>
+          <p class="opacity-80">Please click the button below to open the waiver. When you finish, you’ll be returned here automatically.</p>
+          {#if docusealUrl}
+            {#if waiverDone || fields.waiver_completed}
+              <div class="flex justify-center text-sm text-green-700">✓ Waiver completed</div>
+            {:else}
+              <div class="flex justify-center">
+                <Button onclick={() => (window.location.href = docusealUrl)}>Open waiver</Button>
+              </div>
+            {/if}
+          {:else}
+            <div class="text-sm text-red-600">Waiver form is not configured. Set PUBLIC_DOCUSEAL_EMBED_URL in your environment.</div>
+          {/if}
           <div class="flex justify-between gap-3 mt-2">
             <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next}>Next</Button>
+            <Button onclick={next}>{waiverDone ? 'Next' : 'Skip for now'}</Button>
           </div>
         </div>
       </Section>
@@ -874,17 +933,41 @@
               </div>
           </div>
           <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+
+          <!-- Waiver status section -->
+          <div class="group relative">
+           <div class="flex items-center gap-2">
+             <div class="font-semibold">Waiver</div>
+          </div>
+          <div class="mt-2 opacity-90">
+            {#if waiverDone || fields.waiver_completed}
+             <div class="text-green-700">✓ Waiver completed</div>
+           {:else}
+              <div class="text-red-700">
+                  ✗ Waiver not completed — you must
+                  <button type="button" class="underline cursor-pointer"
+                    onclick={() => { docusealUrl ? (window.location.href = docusealUrl) : (current='waiver'); }}
+                    onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ docusealUrl ? (window.location.href = docusealUrl) : (current='waiver'); }}}
+                    aria-label="Complete the waiver"
+                  >complete the waiver</button>
+                  to continue.
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
           <div class="mt-2">
-          <label class="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" class="mt-1" bind:checked={additional.attendance_confirmation} onchange={saveAttendance} />
-          <span class="font-semibold">I understand I’m signing up for an in‑person event and will need to attend this event in‑person to participate. <span class="text-red-600">*</span></span>
-          </label>
-           </div>
-           <div class="text-sm opacity-80 mt-4">By clicking Next, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
-           <div class="flex justify-between gap-3 mt-2">
-             <Button variant="outline" onclick={back}>Back</Button>
-             <Button onclick={next} disabled={!additional.attendance_confirmation}>Next</Button>
-           </div>
+           <label class="flex items-start gap-2 cursor-pointer">
+           <input type="checkbox" class="mt-1" bind:checked={additional.attendance_confirmation} onchange={saveAttendance} />
+           <span class="font-semibold">I understand I’m signing up for an in‑person event and will need to attend this event in‑person to participate. <span class="text-red-600">*</span></span>
+           </label>
+            </div>
+            <div class="text-sm opacity-80 mt-4">By clicking Submit, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
+            <div class="flex justify-between gap-3 mt-2">
+            <Button variant="outline" onclick={back}>Back</Button>
+            <Button onclick={next} disabled={!additional.attendance_confirmation}>Submit!</Button>
+            </div>
         </div>
       </Section>
     {/if}
@@ -892,6 +975,15 @@
 
 
     {#if current === 'complete'}
+      <div class="bg-white/10 rounded-xl border border-[color:var(--color-border-tan)] p-5 shadow-sm">
+        <h2 class="text-2xl font-semibold">Next steps</h2>
+        <p class="opacity-80 mt-2 mb-4">Want a head start, <i>and</i> some prizes? Spend an hour following our tutorial on how to make a game and get a free sticker sheet + get entered into a raffle for bigger prizes.</p>
+        <a href="https://daydream.jumpstart.hackclub.com" target="_blank" rel="noreferrer" class="group relative block w-full rounded-lg overflow-hidden p-3 md:p-4" style="background:#152c6f">
+          <div class="pointer-events-none absolute inset-0 rounded-lg md:hidden" style="box-shadow: inset 0 0 24px 8px rgba(255,255,255,0.28), inset 0 0 48px 16px rgba(255,255,255,0.12);"></div>
+          <div class="pointer-events-none absolute inset-0 rounded-lg hidden md:block" style="box-shadow: inset 0 0 40px 12px rgba(255,255,255,0.35), inset 0 0 80px 24px rgba(255,255,255,0.18);"></div>
+          <img src="/jumpstart.gif" alt="Jumpstart tutorial" class="relative w-full h-auto rounded-md transform transition-transform duration-300 group-hover:scale-105" />
+        </a>
+      </div>
       <Section title="Your e‑ticket">
         <div class="space-y-4"> 
           <p>You're all checked in!</p>
@@ -899,15 +991,20 @@
           <div class="w-full max-w-[560px] mx-auto">
             <iframe title="Your Daydream ticket" class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(attendee.record.id)}`}></iframe>
           </div>
-          <div>
-            <a class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(attendee.record.id)}`} target="_blank" rel="noreferrer">Open ticket in new tab</a>
+          <div class="flex justify-center">
+            <a class="inline-block rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(attendee.record.id)}`} target="_blank" rel="noreferrer">Open ticket in new tab</a>
           </div>
         </div>
       </Section>
+      <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
     {/if}
   </div>
 {/if}
 
-<SaveIndicator bind:this={saveIndicatorRef} />
+<div class="h-[20px]"></div>
 
+<CloudParticles height={140} />
+  
+<SaveIndicator bind:this={saveIndicatorRef} />
+ 
 

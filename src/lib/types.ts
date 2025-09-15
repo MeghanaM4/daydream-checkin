@@ -32,10 +32,13 @@ export interface AttendeeFields {
   shirt_size?: ShirtSize;
   dummy_checkin_attendance_confirmation?: boolean;
   additional_accommodations?: string;
-
+  
   email_verification_code?: string;
-
+  
   ticket_email_sent?: boolean;
+  
+  // Waiver
+   waiver_completed?: boolean;
   
   pronouns?: Pronouns[]; // multi-select of allowed values
  }

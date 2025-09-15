@@ -20,6 +20,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const finalize = !!body.finalize;
   if (!section) return bad('Invalid payload');
 
+  // Do not allow further edits after completion
+  if (attendee.record.fields.checkin_completed) {
+    return bad('Check-in already completed');
+  }
+ 
   const issues: Record<string, string> = {};
   const toUpdate: Partial<AttendeeFields> = {};
 
@@ -102,7 +107,13 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   } else if (section === 'waiver') {
     // placeholder: no-op for now
   } else if (section === 'review') {
-    // no-op: read-only summary step
+    // enforce waiver completion before proceeding from review when finalizing
+    if (finalize) {
+      const f: any = attendee.record.fields;
+      if (!f.waiver_completed) {
+        return bad('Validation failed', { waiver: 'Required' });
+      }
+    }
   } else if (section === 'email') {
     // nothing to update here directly
   } else {
