@@ -1,0 +1,23 @@
+# Nixpacks configuration for SvelteKit (adapter-node) on Coolify
+
+# Ensure Node 20+ and Bun are available (Bun is used for install/build since bun.lock exists)
+[phases.setup]
+nixPkgs = ["nodejs_20", "bun"]
+
+# Install dependencies using Bun
+[phases.install]
+cmds = [
+  "bun install --frozen-lockfile"
+]
+
+# Build the SvelteKit app
+[phases.build]
+cmds = [
+  "bun run build"
+]
+cacheDirectories = ["node_modules/.cache"]
+
+# Start the adapter-node server
+[start]
+# Coolify will set PORT; adapter-node listens on it automatically
+cmd = "node build"
