@@ -28,6 +28,8 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
-		"@fontsource/atkinson-hyperlegible": "^5.2.6"
+		"@fontsource/atkinson-hyperlegible": "^5.2.6",
+		"countries-list": "^3.1.1",
+		"svelte-sonner": "^1.0.5"
 	}
 }

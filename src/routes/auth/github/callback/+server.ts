@@ -13,7 +13,12 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
   }
   // clear oauth_state cookie
   cookies.set('oauth_state', '', { path: '/', maxAge: 0 });
-
+  
+  // restore step if present
+  const step = cookies.get('oauth_step');
+  if (step) cookies.set('checkin_step', step, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+  cookies.set('oauth_step', '', { path: '/', maxAge: 0 });
+ 
   // exchange code for access token
   const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
@@ -41,8 +46,25 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
   const attendee = await getAttendeeByToken(state);
   if (attendee) {
-    await updateAttendeeFields(attendee.record.id, { github_username: username });
+  await updateAttendeeFields(attendee.record.id, { github_username: username });
+    // Ensure session cookie persists after cross-site OAuth
+     const { dev } = await import('$app/environment');
+    cookies.set('checkin_token', state, {
+      httpOnly: true,
+      secure: !dev,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7
+    });
+    // signal client to show toast
+    cookies.set('oauth_connected', 'github', {
+      httpOnly: false,
+      secure: !dev,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60
+    });
   }
-
+ 
   throw redirect(302, '/checkin');
 };

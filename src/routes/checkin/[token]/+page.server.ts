@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
   cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: !dev,
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7
   });

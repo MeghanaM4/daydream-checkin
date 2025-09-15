@@ -10,10 +10,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
   const { code } = await request.json().catch(() => ({ code: '' }));
   if (!code || String(code).length !== 6) return json({ ok: false, message: 'Invalid code' }, { status: 400 });
-
+  
   const correct = attendee.record.fields.email_verification_code;
   if (code !== correct) return json({ ok: false, message: 'Incorrect code' }, { status: 400 });
-
-  await updateAttendeeFields(attendee.record.id, { email_verified: true, email_verification_code: '' });
+  
+  const pending = cookies.get('pending_email') || undefined;
+  if (pending) {
+    await updateAttendeeFields(attendee.record.id, { email: pending, email_verification_code: '' } as any);
+    cookies.set('pending_email', '', { path: '/', maxAge: 0 });
+  } else {
+    await updateAttendeeFields(attendee.record.id, { email_verification_code: '' });
+  }
   return json({ ok: true });
 };

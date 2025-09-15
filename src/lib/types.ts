@@ -33,7 +33,6 @@ export interface AttendeeFields {
   dummy_checkin_attendance_confirmation?: boolean;
   additional_accommodations?: string;
 
-  email_verified?: boolean;
   email_verification_code?: string;
 
   ticket_email_sent?: boolean;

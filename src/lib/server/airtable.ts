@@ -73,10 +73,6 @@ export async function updateAttendeeFields(id: string, fields: Partial<AttendeeF
   return res.json();
 }
 
-export async function setEmailVerificationCode(id: string, code: string) {
-  return updateAttendeeFields(id, { email_verification_code: code, email_verified: false });
-}
-
 export function isUnder18(dobIso?: string | null): boolean {
   if (!dobIso) return true; // treat unknown as under 18 per spec
   const dob = new Date(dobIso);

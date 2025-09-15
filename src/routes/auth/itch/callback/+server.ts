@@ -18,6 +18,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   const attendee = await getAttendeeByToken(cookieToken);
   if (attendee) {
     await updateAttendeeFields(attendee.record.id, { itch_username: username });
+    const { dev } = await import('$app/environment');
+    cookies.set('oauth_connected', 'itch', {
+      httpOnly: false,
+      secure: !dev,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60
+    });
+    const step = cookies.get('oauth_step');
+    if (step) cookies.set('checkin_step', step, { path: '/', maxAge: 60 * 60 * 24 * 30 });
+    cookies.set('oauth_step', '', { path: '/', maxAge: 0 });
   }
   return json({ ok: true });
 };

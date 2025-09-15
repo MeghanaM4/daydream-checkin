@@ -2,20 +2,42 @@
   import EventCard from '$lib/components/EventCard.svelte';
   import Section from '$lib/components/SectionShell.svelte';
   import SaveIndicator from '$lib/components/SaveIndicator.svelte';
-  import Progress from '$lib/components/ProgressIndicator.svelte';
+  // Progress list removed in favor of a progress bar
   import Button from '$lib/components/Button.svelte';
   import FormField from '$lib/components/FormField.svelte';
   import type { AttendeeFields } from '$lib/types';
+  import { toast } from 'svelte-sonner';
+  import { fade, fly } from 'svelte/transition';
+  import { countries as countryData } from 'countries-list';
 
   let { data } = $props();
   const attendee = data?.attendee;
   const fields: AttendeeFields = attendee?.record?.fields ?? {} as any;
+  
+  // Email inline edit state
+  let emailMode = $state<'idle' | 'compose' | 'verify' | 'flash'>('idle');
+  let emailLocked = $state(false);
+  let pendingEmail = $state(fields.email || '');
+  let codeDigits = $state<string[]>(['', '', '', '', '', '']);
+  function codeValue() { return codeDigits.join(''); }
+  function resetEmailFlow() {
+    emailMode = 'idle';
+    emailLocked = false;
+    pendingEmail = info.email;
+    codeDigits = ['', '', '', '', '', ''];
+    emailError = undefined;
+    emailSent = false;
+  }
 
   const inputClass = 'rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2';
   function sizeWord(s?: string) {
     if (!s) return '—';
     return s === 'S' ? 'Small' : s === 'M' ? 'Medium' : s === 'L' ? 'Large' : s === 'XL' ? 'Extra Large' : s;
   }
+  // Country dropdown data (name + emoji flag for display only)
+  const countryOptions: Array<{ code: string; name: string; emoji: string }> = Object.entries(countryData as any)
+    .map(([code, v]: any) => ({ code, name: v.name as string, emoji: v.emoji as string }))
+    .sort((a, b) => a.name.localeCompare(b.name));
   function formatPhone(p?: string) {
     const d = (p || '').replace(/\D/g, '');
     if (!d) return '—';
@@ -29,17 +51,27 @@
     return `+${cc} (${rest.slice(0,3)}) ${rest.slice(3,6)}-${rest.slice(6)}`;
   }
 
-  let current = $state<'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'email' | 'complete'>('info');
+  let current = $state<'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'complete'>(data?.initialStep as any || 'info');
   const steps = [
     { key: 'info', label: 'Verify info' },
     { key: 'additional', label: 'Additional info' },
     { key: 'waiver', label: 'Waiver' },
-    { key: 'attendance', label: 'Attendance' },
     { key: 'accounts', label: 'Accounts' },
-    { key: 'email', label: 'Email verification' },
     { key: 'review', label: 'Review' },
     { key: 'complete', label: 'Complete' }
   ];
+
+  function progressPct() {
+    const map: Record<string, number> = {
+      info: 35,
+      additional: 62,
+      waiver: 78,
+      accounts: 92,
+      review: 100,
+      complete: 100
+    };
+    return map[current] ?? 0;
+  }
 
   // Local form state (start from server fields)
   let info = {
@@ -78,10 +110,10 @@
     save('additional', additional);
   }
 
-  let accounts = {
+  let accounts = $state({
     github_username: fields.github_username || '',
     itch_username: fields.itch_username || ''
-  };
+  });
 
   // inline validation errors
   let infoErrors = $state<{
@@ -199,6 +231,130 @@
   }
   function isValidPhone(p?: string) { return normalizedPhoneOrNull(p) !== null; }
 
+   // Save attendance from Review page
+   async function saveAttendance() {
+     showSaving();
+     incPending();
+     try {
+       const res = await fetch('/api/save-progress', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ section: 'attendance', data: { attendance_confirmation: additional.attendance_confirmation } })
+       });
+       if (res.ok) {
+         showSaved();
+       } else {
+         try {
+           const err = await res.json();
+           saveIndicatorRef?.setMessage(err?.message || 'Save failed');
+         } catch {}
+         saveIndicatorRef?.setState('error');
+       }
+     } finally {
+       decPending();
+     }
+   }
+
+  // Email code input handlers
+  function focusCodeIndex(i: number) {
+    const els = Array.from(document.querySelectorAll<HTMLInputElement>('.code-input'));
+    els[i]?.focus();
+    els[i]?.select?.();
+  }
+  async function verifyIfReady() {
+    const val = codeValue();
+    if (/^\d{6}$/.test(val)) {
+      const id = toast('Verifying code…');
+      const res = await fetch('/api/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: val }) });
+      if (res.ok) {
+        emailError = undefined;
+        info.email = pendingEmail;
+        emailLocked = false;
+        emailMode = 'flash';
+        setTimeout(() => { emailMode = 'idle'; codeDigits = ['', '', '', '', '', '']; }, 800);
+        toast.success('Email updated successfully', { id });
+      } else {
+        try {
+          const err = await res.json();
+          emailError = err?.message || 'Verification failed';
+        } catch { emailError = 'Verification failed'; }
+        toast.error(emailError || 'Verification failed');
+      }
+    }
+  }
+  function handleCodeInput(i: number, e: Event) {
+    const target = e.target as HTMLInputElement;
+    const d = (target.value || '').replace(/\D/g, '').slice(0, 1);
+    codeDigits[i] = d;
+    if (d && i < 5) focusCodeIndex(i + 1);
+    verifyIfReady();
+  }
+  function handleCodeKeydown(i: number, e: KeyboardEvent) {
+    const key = e.key;
+    if (key === 'Backspace') {
+      if (codeDigits[i]) {
+        codeDigits[i] = '';
+      } else if (i > 0) {
+        focusCodeIndex(i - 1);
+        codeDigits[i - 1] = '';
+      }
+      e.preventDefault();
+    }
+  }
+  function handleCodePaste(e: ClipboardEvent) {
+    const text = e.clipboardData?.getData('text') || '';
+    const digits = text.replace(/\D/g, '').slice(0, 6).split('');
+    if (digits.length) {
+      for (let i = 0; i < 6; i++) codeDigits[i] = digits[i] || '';
+      e.preventDefault();
+      verifyIfReady();
+      focusCodeIndex(Math.min(digits.length, 5));
+    }
+  }
+
+  async function sendUpdateEmail() {
+    emailError = undefined;
+    if (!pendingEmail || !/\S+@\S+\.[\w-]+/.test(pendingEmail)) {
+      toast.error('Enter a valid email');
+      return;
+    }
+    const id = toast('Sending email…');
+    const res = await fetch('/api/send-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: pendingEmail }) });
+    if (res.ok) {
+      emailSent = true;
+      emailMode = 'verify';
+      toast.success('Email sent', { id });
+      // focus first code box
+      setTimeout(() => focusCodeIndex(0), 0);
+    } else {
+      let msg = 'Failed to send verification email';
+      try { const err = await res.json(); msg = err?.message || msg; } catch {}
+      toast.error(msg, { id });
+    }
+  }
+
+  // Global key handling for code boxes
+  let currentCodeIndex = 0;
+  $effect(() => {
+    if (emailMode === 'verify') {
+      const handler = (e: KeyboardEvent) => {
+        if (/^\d$/.test(e.key)) {
+          codeDigits[currentCodeIndex] = e.key;
+          if (currentCodeIndex < 5) currentCodeIndex += 1;
+          focusCodeIndex(currentCodeIndex);
+          e.preventDefault();
+          verifyIfReady();
+        } else if (e.key === 'Tab') {
+          currentCodeIndex = Math.max(0, Math.min(5, currentCodeIndex + (e.shiftKey ? -1 : 1)));
+          focusCodeIndex(currentCodeIndex);
+          e.preventDefault();
+        }
+      };
+      window.addEventListener('keydown', handler);
+      return () => window.removeEventListener('keydown', handler);
+    }
+  });
+
   async function finalizeAndNext() {
     const section = current;
     const data = section === 'info' ? info : section === 'additional' ? additional : section === 'waiver' ? {} : section === 'attendance' ? { attendance_confirmation: additional.attendance_confirmation } : accounts;
@@ -236,9 +392,7 @@
       if (!additional.emergency_contact_1_name?.trim()) { additionalErrors.emergency_contact_1_name = 'Required'; anyError = true; }
       if (!additional.emergency_contact_1_phone?.trim()) { additionalErrors.emergency_contact_1_phone = 'Required'; anyError = true; }
       if (!additional.emergency_contact_1_relationship?.trim()) { additionalErrors.emergency_contact_1_relationship = 'Required'; anyError = true; }
-      if (!additional.emergency_contact_2_name?.trim()) { additionalErrors.emergency_contact_2_name = 'Required'; anyError = true; }
-      if (!additional.emergency_contact_2_phone?.trim()) { additionalErrors.emergency_contact_2_phone = 'Required'; anyError = true; }
-      if (!additional.emergency_contact_2_relationship?.trim()) { additionalErrors.emergency_contact_2_relationship = 'Required'; anyError = true; }
+
       if (!additional.shirt_size) { additionalErrors.shirt_size = 'Required'; anyError = true; }
 
       // phone format (both)
@@ -256,10 +410,8 @@
     // Compute next step and move immediately; save runs in background
     const nextStep = current === 'info' ? 'additional'
       : current === 'additional' ? 'waiver'
-      : current === 'waiver' ? 'attendance'
-      : current === 'attendance' ? 'accounts'
-      : current === 'accounts' ? 'email'
-      : current === 'email' ? 'review'
+      : current === 'waiver' ? 'accounts'
+      : current === 'accounts' ? 'review'
       : current === 'review' ? 'complete'
       : current;
     current = nextStep as any;
@@ -299,50 +451,12 @@
   function back() {
     if (current === 'additional') current = 'info';
     else if (current === 'waiver') current = 'additional';
-    else if (current === 'attendance') current = 'waiver';
-    else if (current === 'accounts') current = 'attendance';
-    else if (current === 'email') current = 'accounts';
-    else if (current === 'review') current = 'email';
+    /* attendance step removed */
+    else if (current === 'accounts') current = 'additional';
+    else if (current === 'review') current = 'accounts';
   }
 
-  // Email verification calls
-  async function sendCode() {
-    emailError = undefined;
-    emailSent = false;
-    showSaving();
-    const res = await fetch('/api/send-verification', { method: 'POST' });
-    if (res.ok) {
-      emailSent = true;
-      showSaved();
-    } else {
-      try {
-        const err = await res.json();
-        emailError = err?.message || 'Failed to send verification email';
-        saveIndicatorRef?.setMessage(emailError);
-      } catch (e) {
-        emailError = 'Failed to send verification email';
-      }
-      saveIndicatorRef?.setState('error');
-    }
-  }
-  async function verifyCode() {
-    showSaving();
-    const res = await fetch('/api/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: email.code }) });
-    if (res.ok) {
-      emailError = undefined;
-      showSaved();
-      next();
-    } else {
-      try {
-        const err = await res.json();
-        emailError = err?.message || 'Verification failed';
-        saveIndicatorRef?.setMessage(emailError);
-      } catch (e) {
-        emailError = 'Verification failed';
-      }
-      saveIndicatorRef?.setState('error');
-    }
-  }
+
 
   let completedSent = $state(false);
   async function complete() {
@@ -367,9 +481,16 @@
     document.cookie = `checkin_step=${encodeURIComponent(step)}; path=/; max-age=${60 * 60 * 24 * 30}`;
   }
   onMount(() => {
-    const allowed = ['info','additional','waiver','attendance','accounts','review','email','complete'];
-    const ck = getCookie('checkin_step');
-    if (ck && allowed.includes(ck)) current = ck as any;
+    console.log(countryData)
+    // Show OAuth connect toast if present
+    const ck = getCookie('oauth_connected');
+    if (ck === 'github') {
+      toast.success('GitHub connected successfully');
+      document.cookie = 'oauth_connected=; path=/; max-age=0';
+    } else if (ck === 'itch') {
+      toast.success('Itch.io connected successfully');
+      document.cookie = 'oauth_connected=; path=/; max-age=0';
+    }
     // Warn on unload if there are pending saves
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (pendingSaves > 0) {
@@ -390,60 +511,128 @@
   <div class="p-6">Invalid or expired check-in session. Please use your email link.</div>
 {:else}
   <div class="space-y-6">
-    <Progress steps={steps} current={current} />
+    <div class="w-full h-2 rounded-md bg-[color:var(--color-border-tan)]/40 overflow-hidden"><div class="h-full bg-[color:var(--color-button-pink)] transition-[width] duration-300" style={`width: ${progressPct()}%`}></div></div>
 
 
     {#if current === 'info'}
-      <Section title="Information Verification" description="Please confirm your information is correct.">
+      <Section title="Personal Information" description="Please confirm your information is correct.">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField label="First name" required error={infoErrors.first_name}>
-            <input class={inputClass} bind:value={info.first_name} oninput={() => { infoErrors.first_name = undefined; save('info', info); }} />
+            <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.first_name} oninput={() => { infoErrors.first_name = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField label="Last name" required error={infoErrors.last_name}>
-            <input class={inputClass} bind:value={info.last_name} oninput={() => { infoErrors.last_name = undefined; save('info', info); }} />
+            <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.last_name} oninput={() => { infoErrors.last_name = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField label="Preferred name">
-            <input class={inputClass} bind:value={info.preferred_name} oninput={() => save('info', info)} />
+            <input class={inputClass + (emailLocked ? ' opacity-60' : '')} bind:value={info.preferred_name} oninput={() => save('info', info)} disabled={emailLocked} />
           </FormField>
-          <FormField label="Email" required error={infoErrors.email}>
-            <input type="email" class={inputClass} bind:value={info.email} oninput={() => { infoErrors.email = undefined; save('info', info); }} />
-          </FormField>
-          <div class="md:col-span-2">
+          <div>
             <div class="text-sm opacity-80 mb-1">Pronouns</div>
-            <div class="flex flex-wrap gap-4">
-              <label class="flex items-center gap-2"><input type="checkbox" checked={additional.pronouns?.includes('he / him')} onchange={() => togglePronoun('he / him')} /> he / him</label>
-              <label class="flex items-center gap-2"><input type="checkbox" checked={additional.pronouns?.includes('she / her')} onchange={() => togglePronoun('she / her')} /> she / her</label>
-              <label class="flex items-center gap-2"><input type="checkbox" checked={additional.pronouns?.includes('they / them or other')} onchange={() => togglePronoun('they / them or other')} /> they / them or other</label>
+            <div class="flex flex-col gap-2" class:opacity-60={emailLocked}>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('he / him')} onchange={() => togglePronoun('he / him')} /> he / him</label>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('she / her')} onchange={() => togglePronoun('she / her')} /> she / her</label>
+              <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('they / them or other')} onchange={() => togglePronoun('they / them or other')} /> they / them or other</label>
             </div>
           </div>
-          <FormField label="Phone" required error={infoErrors.phone}>
-            <input class={inputClass} bind:value={info.phone} oninput={() => { infoErrors.phone = undefined; save('info', info); }} />
+          <FormField label="Email" required error={infoErrors.email}>
+            <div class="relative">
+              <input type="email" class={inputClass + ' w-full pr-8 opacity-60 cursor-not-allowed'} value={info.email} disabled={true} />
+              {#if emailMode === 'idle'}
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label="Edit email" onclick={() => { emailMode = 'compose'; emailLocked = true; pendingEmail = ''; }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+              {:else if emailMode === 'compose' || emailMode === 'verify'}
+                <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 cursor-pointer" aria-label="Cancel email update" onclick={resetEmailFlow}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+                </button>
+              {/if}
+              {#if emailMode === 'flash'}
+                <div class="absolute right-2 top-1/2 -translate-y-1/2 transition-opacity duration-700 opacity-100">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </div>
+              {/if}
+            </div>
           </FormField>
+          <FormField label="Phone" required error={infoErrors.phone}>
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.phone} oninput={() => { infoErrors.phone = undefined; save('info', info); }} disabled={emailLocked} />
+          </FormField>
+
+          {#if emailMode === 'compose' || emailMode === 'verify'}
+            <div class="md:col-span-2 mt-2 rounded-md border border-[color:var(--color-border-tan)] bg-white/60 p-3" transition:fade={{ duration: 150 }}>
+              {#key emailMode}
+                {#if emailMode === 'compose'}
+                  <div class="flex gap-2 items-end">
+                    <label class="flex-1">
+                      <div class="text-sm opacity-70">New email</div>
+                      <input type="email" class={inputClass + ' w-full'} bind:value={pendingEmail} placeholder={info.email} onkeydown={(e)=>{ if(e.key==='Enter'){ sendUpdateEmail(); } }} />
+                    </label>
+                    <Button onclick={sendUpdateEmail}>Update email</Button>
+                    <Button variant="outline" onclick={resetEmailFlow}>Cancel</Button>
+                  </div>
+                  <div class="text-sm opacity-70">We'll send a 6‑digit code to this address.</div>
+                  {#if emailError}
+                    <div class="text-red-600 text-sm">{emailError}</div>
+                  {/if}
+                {:else}
+                  <div class="text-sm">Verification code sent to <span class="font-medium">{pendingEmail}</span>. Check your inbox.</div>
+                  <div class="flex items-center gap-2">
+                    {#each [0,1,2,3,4,5] as i}
+                      <input
+                        class="code-input w-10 h-10 text-center rounded-md border border-[color:var(--color-border-tan)] bg-white/70 text-lg"
+                        bind:value={codeDigits[i]}
+                        onfocus={() => currentCodeIndex = i}
+                        oninput={(e) => handleCodeInput(i, e)}
+                        onkeydown={(e) => handleCodeKeydown(i, e)}
+                        onpaste={(e) => handleCodePaste(e)}
+                        maxlength="1"
+                        inputmode="numeric"
+                      />
+                    {/each}
+                    <Button variant="outline" onclick={resetEmailFlow}>Cancel</Button>
+                  </div>
+                  {#if emailError}
+                    <div class="text-red-600 text-sm">{emailError}</div>
+                  {/if}
+                {/if}
+              {/key}
+            </div>
+          {/if}
+
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">You'll need access to this email during the event .</div>
+
+
           <FormField classes="md:col-span-2" label="Date of birth" required error={infoErrors.dob}>
-            <input type="date" class={inputClass} bind:value={info.dob} oninput={() => { infoErrors.dob = undefined; save('info', info); }} />
+            <input type="date" class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.dob} oninput={() => { infoErrors.dob = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField classes="md:col-span-2" label="Address line 1" required error={infoErrors.address_1}>
-            <input class={inputClass} bind:value={info.address_1} oninput={() => { infoErrors.address_1 = undefined; save('info', info); }} />
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.address_1} oninput={() => { infoErrors.address_1 = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField classes="md:col-span-2" label="Address line 2">
-            <input class={inputClass} bind:value={info.address_2} oninput={() => save('info', info)} />
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.address_2} oninput={() => save('info', info)} disabled={emailLocked} />
           </FormField>
           <FormField label="City" required error={infoErrors.city}>
-            <input class={inputClass} bind:value={info.city} oninput={() => { infoErrors.city = undefined; save('info', info); }} />
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.city} oninput={() => { infoErrors.city = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField label="State" required error={infoErrors.state}>
-            <input class={inputClass} bind:value={info.state} oninput={() => { infoErrors.state = undefined; save('info', info); }} />
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.state} oninput={() => { infoErrors.state = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
           <FormField label="Country" required error={infoErrors.country}>
-            <input class={inputClass} bind:value={info.country} oninput={() => { infoErrors.country = undefined; save('info', info); }} />
+            <select class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.country} onchange={() => { infoErrors.country = undefined; save('info', info); }} disabled={emailLocked}>
+              <option value="">Select</option>
+              {#each countryOptions as c}
+                <option value={c.name}>{c.emoji} {c.name}</option>
+              {/each}
+            </select>
           </FormField>
           <FormField label="ZIP code" required error={infoErrors.zip_code}>
-            <input class={inputClass} bind:value={info.zip_code} oninput={() => { infoErrors.zip_code = undefined; save('info', info); }} />
+            <input class={inputClass + (emailMode !== 'idle' ? ' opacity-60' : '')} bind:value={info.zip_code} oninput={() => { infoErrors.zip_code = undefined; save('info', info); }} disabled={emailLocked} />
           </FormField>
         </div>
         <div class="flex justify-end gap-3 mt-4">
-          <Button onclick={next}>Next</Button>
+          <Button onclick={next} disabled={emailLocked}>Next</Button>
         </div>
+
+
       </Section>
     {/if}
 
@@ -460,11 +649,12 @@
     {/if}
 
     {#if current === 'additional'}
-      <Section title="Additional Personal Information">
+      <Section title="Additional Information">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <!-- Pronouns are already in DB; just display them above in the info section if needed. Removed editing here. -->
 
           <div class="md:col-span-2 font-semibold">Emergency contacts</div>
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">This should be someone who can answer immediately and help in an emergency (a parent/guardian or trusted adult).</div>
           <FormField label="Contact 1 name" required error={additionalErrors.emergency_contact_1_name}>
             <input placeholder="Full name" class={inputClass} bind:value={additional.emergency_contact_1_name} oninput={() => { additionalErrors.emergency_contact_1_name = undefined; save('additional', additional); }} />
           </FormField>
@@ -475,28 +665,39 @@
             <input placeholder="Parent, guardian, etc." class={inputClass} bind:value={additional.emergency_contact_1_relationship} oninput={() => { additionalErrors.emergency_contact_1_relationship = undefined; save('additional', additional); }} />
           </FormField>
 
-          <FormField label="Contact 2 name" required error={additionalErrors.emergency_contact_2_name}>
+          <FormField label="Contact 2 name" hint="(optional)" error={additionalErrors.emergency_contact_2_name}>
             <input placeholder="Full name" class={inputClass} bind:value={additional.emergency_contact_2_name} oninput={() => { additionalErrors.emergency_contact_2_name = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField label="Contact 2 phone" required error={additionalErrors.emergency_contact_2_phone}>
+          <FormField label="Contact 2 phone" hint="(optional)" error={additionalErrors.emergency_contact_2_phone}>
             <input placeholder="(555) 123-4567 or +1 555 123 4567" class={inputClass} bind:value={additional.emergency_contact_2_phone} oninput={() => { additionalErrors.emergency_contact_2_phone = undefined; save('additional', additional); }} />
           </FormField>
-          <FormField classes="md:col-span-2" label="Contact 2 relationship" required error={additionalErrors.emergency_contact_2_relationship}>
-            <input placeholder="Parent, guardian, etc." class={inputClass} bind:value={additional.emergency_contact_2_relationship} oninput={() => { additionalErrors.emergency_contact_2_relationship = undefined; save('additional', additional); }} />
+          <FormField classes="md:col-span-2" label="Contact 2 relationship" hint="(optional)" error={additionalErrors.emergency_contact_2_relationship}>
+          <input placeholder="Parent, guardian, etc." class={inputClass} bind:value={additional.emergency_contact_2_relationship} oninput={() => { additionalErrors.emergency_contact_2_relationship = undefined; save('additional', additional); }} />
           </FormField>
+          <div class="md:col-span-2 text-sm opacity-70 -mt-1">If you have specific health risks (e.g., epilepsy, severe allergies, asthma), please add a second emergency contact.</div>
 
-          <FormField label="T‑shirt size" required error={additionalErrors.shirt_size}>
-            <select class={inputClass} bind:value={additional.shirt_size} onchange={() => { additionalErrors.shirt_size = undefined; save('additional', additional); }}>
-              <option value="">Select</option>
-              <option>S</option><option>M</option><option>L</option><option>XL</option>
-            </select>
-          </FormField>
+          <div class="md:col-span-2 h-px bg-[color:var(--color-border-tan)]/70"></div>
+ 
           <FormField classes="md:col-span-2" label="Dietary restrictions & allergies">
             <textarea placeholder="e.g. vegetarian, peanut allergy" class={inputClass} rows="3" bind:value={additional.dietary_restrictions} oninput={() => save('additional', additional)}></textarea>
           </FormField>
           <FormField classes="md:col-span-2" label="Is there anything else we should know to help make this the best experience for you?">
             <textarea class={inputClass} rows="3" bind:value={additional.additional_accommodations} oninput={() => save('additional', additional)} placeholder="Accessibility needs, scheduling constraints, etc."></textarea>
           </FormField>
+
+          <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+
+            <FormField label="T‑shirt size" hint="(Unisex • US sizing)" required error={additionalErrors.shirt_size}>
+              <select class={inputClass} bind:value={additional.shirt_size} onchange={() => { additionalErrors.shirt_size = undefined; save('additional', additional); }}>
+                <option value="">Select</option>
+                <option>S</option><option>M</option><option>L</option><option>XL</option>
+              </select>
+            </FormField>
+
+              <div class="flex justify-center md:justify-start">
+              <img src="/shirt.png" alt="Event t‑shirt" class="ml-4  mt-2 -mb-10 w-32 md:w-40 h-auto rounded-md" />
+            </div>
+          </div>
         </div>
         <div class="flex justify-between gap-3 mt-4">
           <Button variant="outline" onclick={back}>Back</Button>
@@ -505,16 +706,7 @@
       </Section>
     {/if}
 
-    {#if current === 'attendance'}
-      <Section title="Attendance confirmation">
-        <p class="mb-3">This event is in-person. Please confirm you understand you must attend on-site to participate.</p>
-        <label class="flex items-center gap-2"><input type="checkbox" bind:checked={additional.attendance_confirmation} /> I understand I will need to attend this event in‑person. <span class="text-red-600">*</span></label>
-        <div class="flex justify-between gap-3 mt-4">
-          <Button variant="outline" onclick={back}>Back</Button>
-          <Button onclick={next}>Next</Button>
-        </div>
-      </Section>
-    {/if}
+
 
     {#if current === 'accounts'}
       <Section title="Account Connections">
@@ -523,7 +715,7 @@
             <div class="font-semibold mb-2">GitHub account</div>
             {#if accounts.github_username}
               <div class="mb-2">✓ Connected as {accounts.github_username}</div>
-              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" onclick={() => { accounts.github_username=''; save('accounts', accounts); }}>Disconnect</button></div>
+              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.github_username=''; toast('Disconnecting GitHub…'); save('accounts', accounts); setTimeout(() => toast.success('GitHub disconnected'), 50); }}>Disconnect</button></div>
             {:else}
               <div class="mb-2">Not connected</div>
               <div class="space-y-2">
@@ -545,7 +737,7 @@
             <div class="font-semibold mb-2">Itch.io account</div>
             {#if accounts.itch_username}
               <div class="mb-2">✓ Connected as {accounts.itch_username}</div>
-              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" onclick={() => { accounts.itch_username=''; save('accounts', accounts); }}>Disconnect</button></div>
+              <div class="flex gap-2"><button class="rounded-md border border-[color:var(--color-border-tan)] px-3 py-2 cursor-pointer hover:bg-[color:var(--color-border-tan)]/10 transition-colors" onclick={() => { accounts.itch_username=''; toast('Disconnecting Itch.io…'); save('accounts', accounts); setTimeout(() => toast.success('Itch.io disconnected'), 50); }}>Disconnect</button></div>
             {:else}
               <div class="mb-2">Not connected</div>
               <div class="space-y-2">
@@ -565,14 +757,14 @@
 
           <div class="flex justify-between gap-3 mt-2">
             <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next}>Next</Button>
+            <Button onclick={next} disabled={!accounts.github_username || !accounts.itch_username}>Next</Button>
           </div>
         </div>
       </Section>
     {/if}
 
     {#if current === 'review'}
-      <Section title="Review your information">
+      <Section title="Almost Done! Review your information:">
         <div class="space-y-5 text-[15px]">
           <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
           <div class="group relative">
@@ -644,18 +836,28 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
               </button>
             </div>
+            {#if (additional.emergency_contact_2_name?.trim() || additional.emergency_contact_2_phone?.trim() || additional.emergency_contact_2_relationship?.trim())}
             <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
-            <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
-            <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
-            <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+              <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
+                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
+                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
+                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+              </div>
+              <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
+                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_2_name || '—'}</div>
+                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_2_phone) || '—'}</div>
+                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_2_relationship || '—'}</div>
+              </div>
             </div>
-            <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
-            <div><span class="opacity-70">Name:</span> {additional.emergency_contact_2_name || '—'}</div>
-            <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_2_phone) || '—'}</div>
-            <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_2_relationship || '—'}</div>
+            {:else}
+            <div class="mt-2 grid grid-cols-1 gap-4">
+              <div class="border border-[color:var(--color-border-tan)] rounded-md p-3">
+                <div><span class="opacity-70">Name:</span> {additional.emergency_contact_1_name || '—'}</div>
+                <div><span class="opacity-70">Phone:</span> {formatPhone(additional.emergency_contact_1_phone) || '—'}</div>
+                <div><span class="opacity-70">Relationship:</span> {additional.emergency_contact_1_relationship || '—'}</div>
+              </div>
             </div>
-            </div>
+            {/if}
           </div>
           <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
           <div class="group relative">
@@ -671,54 +873,29 @@
               <div class="md:col-span-2"><span class="opacity-70">Email:</span> {info.email}</div>
               </div>
           </div>
-          <div class="text-sm opacity-80 mt-4">By clicking Next, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
-          <div class="flex justify-between gap-3 mt-2">
-            <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next}>Next</Button>
-          </div>
+          <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+          <div class="mt-2">
+          <label class="flex items-start gap-2 cursor-pointer">
+          <input type="checkbox" class="mt-1" bind:checked={additional.attendance_confirmation} onchange={saveAttendance} />
+          <span class="font-semibold">I understand I’m signing up for an in‑person event and will need to attend this event in‑person to participate. <span class="text-red-600">*</span></span>
+          </label>
+           </div>
+           <div class="text-sm opacity-80 mt-4">By clicking Next, you confirm your information is accurate. After submission, you may not be able to edit it further.</div>
+           <div class="flex justify-between gap-3 mt-2">
+             <Button variant="outline" onclick={back}>Back</Button>
+             <Button onclick={next} disabled={!additional.attendance_confirmation}>Next</Button>
+           </div>
         </div>
       </Section>
     {/if}
 
-    {#if current === 'email'}
-      <Section title="Email Verification">
-        <div class="space-y-3">
-          <div>Current email: <span class="font-semibold">{info.email}</span></div>
-          <div class="flex items-center gap-3">
-            <div class="flex gap-2">
-              <Button onclick={sendCode}>Send verification code</Button>
-              <Button variant="outline" onclick={sendCode}>Resend code</Button>
-            </div>
-            {#if emailSent}
-              <div class="text-green-700 text-sm">Verification email sent.</div>
-            {/if}
-          </div>
-          <div class="flex items-end gap-2">
-            <label class="flex flex-col gap-1">
-              <span>Enter 6‑digit code</span>
-              <input class="rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2 w-40 tracking-widest text-center" maxlength="6" bind:value={email.code} />
-            </label>
-            <Button onclick={verifyCode}>Verify</Button>
-          </div>
-          {#if emailError}
-            <div class="text-red-600 text-sm">{emailError}</div>
-          {/if}
-          {#if fields.email_verified}
-            <div class="text-green-700">✓ Email verified</div>
-          {/if}
-          <div class="flex justify-between gap-3 mt-2">
-            <Button variant="outline" onclick={back}>Back</Button>
-            <Button onclick={next}>Next</Button>
-          </div>
-        </div>
-      </Section>
-    {/if}
+
 
     {#if current === 'complete'}
       <Section title="Your e‑ticket">
         <div class="space-y-4"> 
           <p>You're all checked in!</p>
-          <p class="opacity-80">Show this ticket at check‑in. Keep it handy in your wallet.</p>
+          <p class="opacity-80">Show this ticket at check‑in. We also emailed a copy of your ticket to you.</p>
           <div class="w-full max-w-[560px] mx-auto">
             <iframe title="Your Daydream ticket" class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(attendee.record.id)}`}></iframe>
           </div>

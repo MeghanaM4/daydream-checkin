@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     }
     if (data.email && !/^\S+@\S+\.[\w-]+$/.test(data.email)) issues.email = 'Invalid email';
     if (data.phone && !/^[+\d][\d\-()\s]{7,}$/.test(data.phone)) issues.phone = 'Invalid phone';
-    if (data.dob && !isUnder18(data.dob)) issues.dob = 'Must be 18 or under';
+    if (data.dob && !isUnder18(data.dob)) issues.dob = 'Sorry, but you must be 18 or under!';
 
     if (Object.keys(issues).length) return bad('Validation failed', issues);
 
@@ -60,9 +60,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       for (const p of arr) if (!allowed.includes(p)) issues.pronouns = 'Invalid option';
     }
     const ec1 = ['emergency_contact_1_name','emergency_contact_1_phone','emergency_contact_1_relationship'] as const;
-    const ec2 = ['emergency_contact_2_name','emergency_contact_2_phone','emergency_contact_2_relationship'] as const;
     if (finalize) {
-      for (const k of [...ec1, ...ec2]) {
+      for (const k of [...ec1]) {
         const v = (data as any)[k];
         if (!v || String(v).trim() === '') issues[k] = 'Required';
       }

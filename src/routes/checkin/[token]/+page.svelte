@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   onMount(() => {
-    goto('/checkin/event', { replaceState: true });
+    // Force a full navigation so the Set-Cookie from the server is attached to the next request reliably
+    window.location.replace('/checkin/event');
   });
 </script>
 

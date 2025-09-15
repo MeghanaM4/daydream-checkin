@@ -10,9 +10,18 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
     throw redirect(302, '/checkin');
   }
   // Set a temporary OAuth state cookie with lax same-site so it returns on the GitHub → callback top-level navigation
+  const { dev } = await import('$app/environment');
   cookies.set('oauth_state', token, {
     httpOnly: true,
-    secure: true,
+    secure: !dev,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 600
+  });
+  const step = cookies.get('checkin_step') || '';
+  cookies.set('oauth_step', step, {
+    httpOnly: true,
+    secure: !dev,
     sameSite: 'lax',
     path: '/',
     maxAge: 600
