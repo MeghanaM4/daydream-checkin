@@ -376,12 +376,12 @@
       // required fields
       if (!info.first_name?.trim()) { infoErrors.first_name = t('info.required'); anyError = true; }
       if (!info.last_name?.trim()) { infoErrors.last_name = t('info.required'); anyError = true; }
-      if (!info.email?.trim()) { infoErrors.email = 'Required'; anyError = true; }
-      if (!info.dob?.trim()) { infoErrors.dob = 'Required'; anyError = true; }
-      if (!info.address_1?.trim()) { infoErrors.address_1 = 'Required'; anyError = true; }
-      if (!info.city?.trim()) { infoErrors.city = 'Required'; anyError = true; }
-      if (!info.state?.trim()) { infoErrors.state = 'Required'; anyError = true; }
-      if (!info.country?.trim()) { infoErrors.country = 'Required'; anyError = true; }
+      if (!info.email?.trim()) { infoErrors.email = t('info.required'); anyError = true; }
+      if (!info.dob?.trim()) { infoErrors.dob = t('info.required'); anyError = true; }
+      if (!info.address_1?.trim()) { infoErrors.address_1 = t('info.required'); anyError = true; }
+      if (!info.city?.trim()) { infoErrors.city = t('info.required'); anyError = true; }
+      if (!info.state?.trim()) { infoErrors.state = t('info.required'); anyError = true; }
+      if (!info.country?.trim()) { infoErrors.country = t('info.required'); anyError = true; }
       if (!info.zip_code?.trim()) { infoErrors.zip_code = 'Required'; anyError = true; }
       // phone format
       const n = normalizedPhoneOrNull(info.phone);
@@ -425,7 +425,7 @@
       : current;
 
     if (current === 'review' && !(waiverDone || !!fields.waiver_completed)) {
-      toast.error('Please complete the waiver before continuing');
+      toast.error(t('waiver.complete_before_continuing'));
       return;
     }
     current = nextStep as any;
