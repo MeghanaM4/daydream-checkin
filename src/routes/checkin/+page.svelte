@@ -183,13 +183,13 @@
         // set errors for both, but don't call server if any invalid
         let anyInvalid = false;
         if (additional.emergency_contact_1_phone && !n1) {
-          additionalErrors.emergency_contact_1_phone = 'Invalid phone';
+          additionalErrors.emergency_contact_1_phone = t('info.invalid_phone_short');
           anyInvalid = true;
         } else {
           additionalErrors.emergency_contact_1_phone = undefined;
         }
         if (additional.emergency_contact_2_phone && !n2) {
-          additionalErrors.emergency_contact_2_phone = 'Invalid phone';
+          additionalErrors.emergency_contact_2_phone = t('info.invalid_phone_short');
           anyInvalid = true;
         } else {
           additionalErrors.emergency_contact_2_phone = undefined;
@@ -374,8 +374,8 @@
       infoErrors = {} as any;
       let anyError = false;
       // required fields
-      if (!info.first_name?.trim()) { infoErrors.first_name = 'Required'; anyError = true; }
-      if (!info.last_name?.trim()) { infoErrors.last_name = 'Required'; anyError = true; }
+      if (!info.first_name?.trim()) { infoErrors.first_name = t('info.required'); anyError = true; }
+      if (!info.last_name?.trim()) { infoErrors.last_name = t('info.required'); anyError = true; }
       if (!info.email?.trim()) { infoErrors.email = 'Required'; anyError = true; }
       if (!info.dob?.trim()) { infoErrors.dob = 'Required'; anyError = true; }
       if (!info.address_1?.trim()) { infoErrors.address_1 = 'Required'; anyError = true; }
@@ -406,9 +406,9 @@
 
       // phone format (both)
       const n1 = normalizedPhoneOrNull(additional.emergency_contact_1_phone);
-      if (additional.emergency_contact_1_phone && !n1) { additionalErrors.emergency_contact_1_phone = 'Invalid phone'; anyError = true; }
+      if (additional.emergency_contact_1_phone && !n1) { additionalErrors.emergency_contact_1_phone = t('info.invalid_phone_short'); anyError = true; }
       const n2 = normalizedPhoneOrNull(additional.emergency_contact_2_phone);
-      if (additional.emergency_contact_2_phone && !n2) { additionalErrors.emergency_contact_2_phone = 'Invalid phone'; anyError = true; }
+      if (additional.emergency_contact_2_phone && !n2) { additionalErrors.emergency_contact_2_phone = t('info.invalid_phone_short'); anyError = true; }
       if (n1) additional.emergency_contact_1_phone = n1;
       if (n2) additional.emergency_contact_2_phone = n2;
 
