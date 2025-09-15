@@ -93,7 +93,7 @@
     zip_code: fields.zip_code || ''
   };
 
-  let additional = {
+  let additional = $state({
     pronouns: Array.isArray((fields as any).pronouns) ? (fields as any).pronouns : [],
     emergency_contact_1_name: fields.emergency_contact_1_name || '',
     emergency_contact_1_phone: fields.emergency_contact_1_phone || '',
@@ -105,7 +105,7 @@
     dietary_restrictions: fields.dietary_restrictions || '',
     additional_accommodations: fields.additional_accommodations || '',
     attendance_confirmation: !!fields.dummy_checkin_attendance_confirmation
-  };
+  });
 
   function togglePronoun(v: 'he / him' | 'she / her' | 'they / them or other') {
     const set = new Set(additional.pronouns);
