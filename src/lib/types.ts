@@ -53,7 +53,7 @@ export interface EventFields {
   event_format: string; // e.g. "2-day", "24 hours"
   start_date: string; // ISO date
   location: string; // city/venue
-  event_waiver_link?: string; // optional DocuSeal or external waiver URL
+  custom_waiver_link?: string; // optional DocuSeal or external waiver URL
 }
 
 export interface AttendeeWithEvent {

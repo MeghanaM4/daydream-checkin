@@ -44,8 +44,8 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
   }
 
   // Prefer event-specific waiver link when available
-  const docusealUrl = (data?.event?.fields?.event_waiver_link && String(data.event.fields.event_waiver_link).trim())
-    ? String(data.event.fields.event_waiver_link)
+  const docusealUrl = (data?.event?.fields?.custom_waiver_link && String(data.event.fields.custom_waiver_link).trim())
+    ? String(data.event.fields.custom_waiver_link)
     : PUBLIC_DOCUSEAL_EMBED_URL;
 
   return { attendee: data, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL } as any;
