@@ -38,8 +38,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       }
     }
     if (data.email && !/^\S+@\S+\.[\w-]+$/.test(data.email)) issues.email = 'Invalid email';
-    if (data.phone && !/^[+\d][\d\-()\s]{7,}$/.test(data.phone)) issues.phone = 'Invalid phone';
-    if (data.dob && !isUnder18(data.dob)) issues.dob = 'Sorry, but you must be 18 or under!';
+    if (data.phone) {
+      const d = String(data.phone || '').replace(/\D/g, '');
+      if (d.length < 10 || d.length > 15) issues.phone = 'Invalid phone';
+    }
+    // Volunteers may be over 18; no age restriction on DOB
 
     if (Object.keys(issues).length) return bad('Validation failed', issues);
 
@@ -72,8 +75,14 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       }
       if (!data.shirt_size || !['S','M','L','XL'].includes(data.shirt_size as ShirtSize)) issues.shirt_size = 'Required';
     }
-    if (data.emergency_contact_1_phone && !/^[+\d][\d\-()\s]{7,}$/.test(data.emergency_contact_1_phone)) issues.emergency_contact_1_phone = 'Invalid phone';
-    if (data.emergency_contact_2_phone && !/^[+\d][\d\-()\s]{7,}$/.test(data.emergency_contact_2_phone)) issues.emergency_contact_2_phone = 'Invalid phone';
+    if (data.emergency_contact_1_phone) {
+      const d1 = String(data.emergency_contact_1_phone || '').replace(/\D/g, '');
+      if (d1.length < 10 || d1.length > 15) issues.emergency_contact_1_phone = 'Invalid phone';
+    }
+    if (data.emergency_contact_2_phone) {
+      const d2 = String(data.emergency_contact_2_phone || '').replace(/\D/g, '');
+      if (d2.length && (d2.length < 10 || d2.length > 15)) issues.emergency_contact_2_phone = 'Invalid phone';
+    }
 
     if (finalize && Object.keys(issues).length) return bad('Validation failed', issues);
 

@@ -10,6 +10,7 @@
   import { toast } from 'svelte-sonner';
   import { fade, fly } from 'svelte/transition';
   import { countries as countryData } from 'countries-list';
+  import { parsePhoneNumberFromString } from 'libphonenumber-js';
   import { t } from '$lib/i18n';
 
   let { data } = $props();
@@ -234,10 +235,26 @@
 
   function digitsOnly(p: string) { return (p || '').replace(/\D/g, ''); }
   function normalizedPhoneOrNull(p?: string) {
-    const d = digitsOnly(p || '');
-    return d.length >= 10 && d.length <= 12 ? d : null;
+    const raw = (p || '').trim();
+    // Prefer explicit international numbers; else try best-effort parse
+    const candidate = raw.startsWith('+') ? raw : ('+' + digitsOnly(raw));
+    try {
+      const phone = parsePhoneNumberFromString(candidate);
+      if (phone && phone.isValid()) {
+        // store as digits only (no plus) to preserve prior storage format
+        return phone.number.replace(/^[+]/, '');
+      }
+    } catch {}
+    // fallback: allow 10..15 digits
+    const d = digitsOnly(raw);
+    return d.length >= 10 && d.length <= 15 ? d : null;
   }
-  function isValidPhone(p?: string) { return normalizedPhoneOrNull(p) !== null; }
+  function isValidPhone(p?: string) {
+    const raw = (p || '').trim();
+    const candidate = raw.startsWith('+') ? raw : ('+' + digitsOnly(raw));
+    const phone = parsePhoneNumberFromString(candidate);
+    return (phone && phone.isValid()) || (digitsOnly(raw).length >= 10 && digitsOnly(raw).length <= 15);
+  }
 
    // Save attendance from Review page
    async function saveAttendance() {
