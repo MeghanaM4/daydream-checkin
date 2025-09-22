@@ -31,6 +31,10 @@
   "picker": {
     "search_placeholder": "Search by event, location, format, or date"
   },
+  "events": {
+    "search_placeholder": "Search events…",
+    "loading": "Loading events…"
+  },
   "alt": {
     "event_tshirt": "Event t‑shirt",
     "ticket_qr": "Ticket QR",
@@ -122,6 +126,7 @@
   },
   "accounts": {
     "section_title": "Account Connections",
+    "optional_note": "Linking your accounts now is optional — you can also do this at the event.",
     "github": "GitHub account",
     "connected_as": "✓ Connected as {username}",
     "disconnect": "Disconnect",
@@ -132,6 +137,9 @@
     "sign_in_with": "Sign in with {service}",
     "please": "Please",
     "create_account": "create a {service} account",
+    "or_wait_at_event": "or wait and do this at the event.",
+    "create_now_instead": "If you want to make a {service} account now instead of waiting, you can do that",
+    "here": "here",
     "then_return_click": "first, then return here and click",
     "connecting_github": "Connecting your GitHub account…",
     "connecting_itch": "Connecting your Itch.io account…",
@@ -166,6 +174,7 @@
   },
   "review": {
     "title": "Almost Done! Review your information:",
+    "edit_event": "Edit event",
     "personal_info": "Personal Information",
     "first_name": "First name",
     "last_name": "Last name",

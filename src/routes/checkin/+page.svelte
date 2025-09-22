@@ -7,6 +7,7 @@
   import FormField from '$lib/components/FormField.svelte';
   import CloudParticles from '$lib/components/CloudParticles.svelte';
   import type { AttendeeFields } from '$lib/types';
+  
   import { toast } from 'svelte-sonner';
   import { fade, fly } from 'svelte/transition';
   import { countries as countryData } from 'countries-list';
@@ -18,6 +19,53 @@
   const fields: AttendeeFields = attendee?.record?.fields ?? {} as any;
   const docusealUrl: string = (data as any)?.docusealUrl || '';
   const baseUrl: string = (data as any)?.baseUrl || '';
+  
+  // Local event state for review card (so edits reflect immediately)
+  let currentEvent = $state({
+    id: attendee?.event?.id || '',
+    name: attendee?.event?.fields?.event_name || '',
+    date: attendee?.event?.fields?.start_date || '',
+    location: attendee?.event?.fields?.location || '',
+    format: attendee?.event?.fields?.event_format || ''
+  });
+  
+  // Event picker state (review page)
+  let showPicker = $state(false);
+  let events = $state<Array<{id:string,name:string,date:string,location:string,format:string}>>([]);
+  let query = $state('');
+  let highlighted = $state(0);
+  let eventsError = $state<string | null>(null);
+  let eventInputEl: HTMLInputElement | null = null;
+  
+  async function openEventPicker() {
+    showPicker = true;
+    highlighted = 0;
+    if (!events.length) {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const j = await res.json();
+          if (j?.ok) events = j.events || [];
+          else eventsError = 'Failed to load events';
+        } else eventsError = 'Failed to load events';
+      } catch { eventsError = 'Failed to load events'; }
+    }
+    setTimeout(()=> eventInputEl?.focus(), 0);
+  }
+  async function selectEventReview(id: string) {
+    const res = await fetch('/api/change-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: id }) });
+    if (res.ok) {
+      const found = events.find(e => e.id === id);
+      if (found) {
+        currentEvent = { id: found.id, name: found.name, date: found.date || '', location: found.location || '', format: found.format || '' };
+        showPicker = false;
+      } else {
+        showPicker = false;
+      }
+    } else {
+      eventsError = 'Failed to change event. Please try again.';
+    }
+  }
   
   // Email inline edit state
   let emailMode = $state<'idle' | 'compose' | 'verify' | 'flash'>('idle');
@@ -788,6 +836,9 @@
     {#if current === 'accounts'}
       <Section title={t('accounts.section_title')} >
         <div class="space-y-6">
+          <div class="rounded-lg border border-[color:var(--color-border-tan)] p-4 bg-white/60">
+            <div class="text-sm opacity-80">{t('accounts.optional_note')}</div>
+          </div>
           <div class="rounded-lg border border-[color:var(--color-border-tan)] p-4">
             <div class="font-semibold mb-2">{t('accounts.github')}</div>
             {#if accounts.github_username}
@@ -804,7 +855,7 @@
                 {#if hasGithubAccount === 'yes'}
                   <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/github-auth">{t('accounts.sign_in_with', { service: 'GitHub' })}</a>
                 {:else if hasGithubAccount === 'no'}
-                  <div class="text-sm opacity-80">{t('accounts.please')} <a class="underline" href="https://github.com/signup" target="_blank" rel="noreferrer">{t('accounts.create_account', { service: 'GitHub' })}</a> {t('accounts.then_return_click')} “{t('accounts.sign_in_with', { service: 'GitHub' })}”.</div>
+                  <div class="text-sm opacity-80">{t('accounts.create_now_instead', { service: 'GitHub' })} <a class="underline" href="https://github.com/signup" target="_blank" rel="noreferrer">{t('accounts.here')}</a>.</div>
                 {/if}
               </div>
             {/if}
@@ -826,7 +877,7 @@
                 {#if hasItchAccount === 'yes'}
                   <a class="cursor-pointer rounded-md bg-[color:var(--color-button-pink)] text-white px-3 py-2" href="/api/itch-auth">{t('accounts.sign_in_with', { service: 'Itch.io' })}</a>
                 {:else if hasItchAccount === 'no'}
-                  <div class="text-sm opacity-80">{t('accounts.please')} <a class="underline" href="https://itch.io/register" target="_blank" rel="noreferrer">{t('accounts.create_account', { service: 'Itch.io' })}</a> {t('accounts.then_return_click')} “{t('accounts.sign_in_with', { service: 'Itch.io' })}”.</div>
+                  <div class="text-sm opacity-80">{t('accounts.create_now_instead', { service: 'Itch.io' })} <a class="underline" href="https://itch.io/register" target="_blank" rel="noreferrer">{t('accounts.here')}</a>.</div>
                 {/if}
               </div>
             {/if}
@@ -834,7 +885,7 @@
 
           <div class="flex justify-between gap-3 mt-2">
             <Button variant="outline" onclick={back}>{t('common.back')}</Button>
-            <Button onclick={next} disabled={!accounts.github_username || !accounts.itch_username}>{t('common.next')}</Button>
+            <Button onclick={next}>{t('common.next')}</Button>
           </div>
         </div>
       </Section>
@@ -843,7 +894,12 @@
     {#if current === 'review'}
       <Section title={t('review.title')}>
         <div class="space-y-5 text-[15px]">
-          <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
+          <div class="relative">
+            <EventCard eventName={currentEvent.name} location={currentEvent.location} date={currentEvent.date} format={currentEvent.format} />
+            <div class="absolute right-3 bottom-3">
+              <Button variant="outline" onclick={openEventPicker}>{t('review.edit_event') || 'Edit event'}</Button>
+            </div>
+          </div>
           <div class="group relative">
             <div class="flex items-center gap-2">
               <div role="button" tabindex="0" class="font-semibold cursor-pointer underline" onclick={() => current='info'} onkeydown={(e)=>{ if(e.key==='Enter'||e.key===' '){ current='info'; }}}>{t('review.personal_info')}</div>
@@ -1021,8 +1077,60 @@
 
 <div class="h-[20px]"></div>
 
+{#if showPicker}
+  <div class="fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="absolute left-1/2 top-20 -translate-x-1/2 w-[90vw] max-w-xl rounded-xl bg-white shadow-2xl border border-[color:var(--color-border-tan)]">
+      <div class="p-3 border-b border-[color:var(--color-border-tan)]/70 bg-white/80 rounded-t-xl">
+        <input
+          bind:this={eventInputEl}
+          class="w-full rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2"
+          placeholder={t('events.search_placeholder') || 'Search events…'}
+          bind:value={query}
+          onkeydown={(e)=>{
+            const list = events.filter(ev => {
+              const q = query.trim().toLowerCase();
+              if (!q) return true;
+              return ev.name.toLowerCase().includes(q) || ev.location.toLowerCase().includes(q) || ev.format.toLowerCase().includes(q) || (ev.date||'').toLowerCase().includes(q);
+            });
+            if (e.key==='Escape') { showPicker=false; }
+            else if (e.key==='ArrowDown') { highlighted = Math.min(list.length-1, highlighted+1); e.preventDefault(); }
+            else if (e.key==='ArrowUp') { highlighted = Math.max(0, highlighted-1); e.preventDefault(); }
+            else if (e.key==='Enter' && list[highlighted]) { selectEventReview(list[highlighted].id); showPicker=false; }
+          }}
+        />
+      </div>
+      <div class="max-h-[60vh] overflow-auto p-2 space-y-2">
+        {#if eventsError}
+          <div class="text-sm text-red-600 px-3 py-2">{eventsError}</div>
+        {/if}
+        {#each events.filter(e => {
+          const q = query.trim().toLowerCase();
+          if (!q) return true;
+          return e.name.toLowerCase().includes(q) || e.location.toLowerCase().includes(q) || e.format.toLowerCase().includes(q) || (e.date||'').toLowerCase().includes(q);
+        }) as ev, i}
+          <button class={`w-full text-left rounded-md px-3 py-2 border transition-colors ${i===highlighted ? 'bg-[color:var(--color-border-tan)]/15 border-[color:var(--color-border-tan)]' : 'border-transparent hover:bg-[color:var(--color-border-tan)]/10 hover:border-[color:var(--color-border-tan)]'}`} onclick={() => { selectEventReview(ev.id); showPicker=false; }}>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium">{ev.name}</div>
+                <div class="text-sm opacity-70">{[ev.location, ev.format, ev.date].filter(Boolean).join(' • ')}</div>
+              </div>
+            </div>
+          </button>
+        {/each}
+        {#if !events.length && !eventsError}
+          <div class="text-sm opacity-70 px-3 py-2">{t('events.loading') || 'Loading events…'}</div>
+        {/if}
+      </div>
+      <div class="p-2 border-t border-[color:var(--color-border-tan)]/70 flex justify-end">
+        <Button variant="outline" onclick={() => showPicker=false}>{t('common.close') || 'Close'}</Button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <CloudParticles height={140} />
-  
+
 <SaveIndicator bind:this={saveIndicatorRef} />
- 
+
 

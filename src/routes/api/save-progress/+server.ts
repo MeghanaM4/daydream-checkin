@@ -101,15 +101,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       additional_accommodations: data.additional_accommodations ?? ''
     });
   } else if (section === 'accounts') {
-    // just allow clearing or setting usernames
+    // allow setting or leaving usernames empty (optional step)
     if (data.github_username !== undefined) toUpdate.github_username = data.github_username?.trim() || '';
     if (data.itch_username !== undefined) toUpdate.itch_username = data.itch_username?.trim() || '';
-    // validate required both connected only on finalize
-    if (finalize) {
-      if (!toUpdate.github_username && !attendee.record.fields.github_username) issues.github_username = 'GitHub required';
-      if (!toUpdate.itch_username && !attendee.record.fields.itch_username) issues.itch_username = 'Itch.io required';
-      if (Object.keys(issues).length) return bad('Validation failed', issues);
-    }
+    // no finalize requirements — accounts are optional
   } else if (section === 'attendance') {
     if (finalize && !(data as any).attendance_confirmation) return bad('Validation failed', { attendance_confirmation: 'Required' });
     Object.assign(toUpdate, { dummy_checkin_attendance_confirmation: !!(data as any).attendance_confirmation } as any);
