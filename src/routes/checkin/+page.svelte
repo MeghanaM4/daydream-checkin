@@ -156,10 +156,12 @@
     attendance_confirmation: !!fields.dummy_checkin_attendance_confirmation
   });
 
+  let pronounsError = $state<string | undefined>(undefined);
   function togglePronoun(v: 'he / him' | 'she / her' | 'they / them or other') {
     const set = new Set(additional.pronouns);
     if (set.has(v)) set.delete(v); else set.add(v);
     additional.pronouns = Array.from(set);
+    pronounsError = undefined;
     save('additional', additional);
   }
 
@@ -447,7 +449,8 @@
       if (!info.city?.trim()) { infoErrors.city = t('info.required'); anyError = true; }
       if (!info.state?.trim()) { infoErrors.state = t('info.required'); anyError = true; }
       if (!info.country?.trim()) { infoErrors.country = t('info.required'); anyError = true; }
-      if (!info.zip_code?.trim()) { infoErrors.zip_code = 'Required'; anyError = true; }
+      if (!info.zip_code?.trim()) { infoErrors.zip_code = t('info.required'); anyError = true; }
+      if (!Array.isArray(additional.pronouns) || additional.pronouns.length === 0) { pronounsError = t('info.required'); anyError = true; }
       // phone format
       const n = normalizedPhoneOrNull(info.phone);
       if (!n) {
@@ -647,6 +650,9 @@
               <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('she / her')} onchange={() => togglePronoun('she / her')} /> {t('pronouns.she_her')}</label>
               <label class="flex items-center gap-2"><input type="checkbox" disabled={emailLocked} checked={additional.pronouns?.includes('they / them or other')} onchange={() => togglePronoun('they / them or other')} /> {t('pronouns.they_other')}</label>
             </div>
+            {#if pronounsError}
+              <div class="text-sm text-red-600 mt-1">{pronounsError}</div>
+            {/if}
           </div>
           <FormField label={t('info.email')} required error={infoErrors.email}>
             <div class="relative">

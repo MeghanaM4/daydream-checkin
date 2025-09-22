@@ -12,6 +12,13 @@ export const load: PageServerLoad = async ({ params, cookies, url }) => {
   if (!result) {
     throw error(404, 'Invalid or expired check-in link');
   }
+
+  // If switching users (different token than existing), clear any persisted step
+  const prev = cookies.get(COOKIE_NAME);
+  if (prev && prev !== token) {
+    cookies.set('checkin_step', '', { path: '/', maxAge: 0 });
+  }
+
   // store token in secure cookie
   cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
