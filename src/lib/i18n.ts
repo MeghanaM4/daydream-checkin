@@ -49,25 +49,25 @@ export async function setLocale(lc: string) {
     // Fallback to English if locale file missing
     locale.set('en');
     dictStore.set(en as Dict);
-    setCookie('locale', 'en');
+    setCookie('lang', 'en');
     return;
   }
   try {
     const mod = await loader();
     dictStore.set((mod?.default || mod) as Dict);
     locale.set(lc);
-    setCookie('locale', lc);
+    setCookie('lang', lc);
   } catch {
     // Fallback to English on error
     locale.set('en');
     dictStore.set(en as Dict);
-    setCookie('locale', 'en');
+    setCookie('lang', 'en');
   }
 }
 
 export function initLocale(defaultLocale = 'en') {
   try {
-    const saved = getCookie('locale');
+    const saved = getCookie('lang') || getCookie('locale');
     if (saved) void setLocale(saved);
     else void setLocale(defaultLocale);
   } catch {

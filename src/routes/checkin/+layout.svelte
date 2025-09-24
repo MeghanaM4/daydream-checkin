@@ -1,9 +1,12 @@
 <script lang="ts">
   import Progress from '$lib/components/ProgressIndicator.svelte';
-  import { t } from '$lib/i18n';
+  import { t, setLocale } from '$lib/i18n';
   let { data, children } = $props();
   const attendee = data.attendee;
   const displayName = `${attendee?.record?.fields?.preferred_name || attendee?.record?.fields?.first_name || ''} ${attendee?.record?.fields?.last_name || ''}`.trim();
+  const eventLang: string = (data as any)?.eventLang || 'en';
+  // Set the event default immediately to avoid flash of English; user cookie still overrides when set
+  setLocale(eventLang || 'en');
 </script>
 
 <div class="min-h-screen flex flex-col bg-[#c1e6fa] -z-2 relative">

@@ -1,14 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { Toaster } from 'svelte-sonner';
-	import { onMount } from 'svelte';
-	import { initLocale } from '$lib/i18n';
-
 	let { children } = $props();
-
-	onMount(() => {
-		initLocale('en');
-	});
 </script>
 
 <svelte:head>

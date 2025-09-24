@@ -54,6 +54,7 @@ export interface EventFields {
   start_date: string; // ISO date
   location: string; // city/venue
   custom_waiver_link?: string; // optional DocuSeal or external waiver URL
+  event_language?: string; // ISO language code like "en"
 }
 
 export interface AttendeeWithEvent {

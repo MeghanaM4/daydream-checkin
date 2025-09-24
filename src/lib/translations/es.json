@@ -140,7 +140,11 @@
     "disconnecting_github": "Desconectando GitHub…",
     "github_disconnected": "GitHub desconectado",
     "disconnecting_itch": "Desconectando Itch.io…",
-    "itch_disconnected": "Itch.io desconectado"
+    "itch_disconnected": "Itch.io desconectado",
+    "optional_note": "Vincular tus cuentas ahora es opcional; también puedes hacerlo en el evento.",
+    "or_wait_at_event": "o esperar y hacerlo en el evento.",
+    "create_now_instead": "Si deseas crear una cuenta de {service} ahora en lugar de esperar, puedes hacerlo",
+    "here": "aquí"
   },
   "waiver": {
     "section_title": "Exención",
@@ -183,7 +187,8 @@
     "connected_github": "Cuenta de GitHub Conectada:",
     "connected_itch": "Cuenta de Itch.io Conectada:",
     "attendance_ack": "Entiendo que me estoy inscribiendo para un evento en persona y necesitaré asistir a este evento en persona para participar.",
-    "submit_disclaimer": "Al hacer clic en Enviar, confirmas que tu información es precisa. Después de la presentación, es posible que no puedas editarla más."
+    "submit_disclaimer": "Al hacer clic en Enviar, confirmas que tu información es precisa. Después de la presentación, es posible que no puedas editarla más.",
+    "edit_event": "Editar evento"
   },
   "complete": {
     "next_steps": "Próximos pasos",
@@ -201,5 +206,9 @@
     "fallback_event_name": "Daydream",
     "name": "Nombre",
     "email": "Correo electrónico"
+  },
+  "events": {
+    "search_placeholder": "Buscar eventos…",
+    "loading": "Cargando eventos…"
   }
 }

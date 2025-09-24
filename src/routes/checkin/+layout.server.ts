@@ -3,8 +3,9 @@ import { getAttendeeByToken } from '$lib/server/airtable';
 import { redirect } from '@sveltejs/kit';
 
 import { PUBLIC_DOCUSEAL_EMBED_URL, PUBLIC_BASE_URL } from '$env/static/public';
+import { setLocale } from '$lib/i18n';
 
-export const load: LayoutServerLoad = async ({ cookies }) => {
+export const load: LayoutServerLoad = async ({ cookies, url }) => {
   const token = cookies.get('checkin_token');
   if (!token) {
     return { attendee: null, docusealUrl: PUBLIC_DOCUSEAL_EMBED_URL, baseUrl: PUBLIC_BASE_URL } as any;
@@ -48,5 +49,21 @@ export const load: LayoutServerLoad = async ({ cookies }) => {
     ? String(data.event.fields.custom_waiver_link)
     : PUBLIC_DOCUSEAL_EMBED_URL;
 
-  return { attendee: data, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL } as any;
+  const eventLang = (data?.event?.fields?.event_language && String(data.event.fields.event_language).trim()) || 'en';
+
+  // Server-side: set locale before render to avoid language flash; user cookie still overrides later.
+  try {
+    await setLocale(eventLang);
+  } catch (e) {
+    console.log('setLocale failed, falling back to en', e);
+  }
+  // Persist default for client unless user already chose one
+  const existing = cookies.get('lang');
+  if (!existing || existing !== eventLang) {
+    cookies.set('lang', eventLang, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+    // reload once to ensure client initializes with correct language w/o flash
+    throw redirect(302, url.pathname + url.search);
+  }
+
+  return { attendee: data, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL, eventLang } as any;
 };
