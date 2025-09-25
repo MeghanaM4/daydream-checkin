@@ -215,5 +215,9 @@
   "deleted": {
     "signup_deleted_title": "Registro eliminado",
     "signup_deleted_message": "Tu registro para {event} ha sido eliminado. Por favor, contacta a los organizadores del evento si tienes alguna pregunta."
+  },
+  "closed": {
+    "title": "Check-ins cerrados",
+    "message": "Los check-ins para {event} están cerrados. Por favor, contacta a los organizadores del evento si tienes alguna pregunta."
   }
 }

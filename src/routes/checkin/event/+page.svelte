@@ -71,6 +71,16 @@
 {#if !attendee}
   <div class="p-6">{t('session.invalid')}</div>
 {:else}
+  {#if (data as any)?.checkinClosed && !attendee?.record?.fields?.checkin_completed}
+    <div class="min-h-[60dvh] flex items-center justify-center p-4">
+      <div class="w-full max-w-[560px] rounded-xl border border-[color:var(--color-border-tan)] bg-white/80 shadow-sm overflow-hidden">
+        <div class="p-8 md:p-10 space-y-3 text-center">
+          <h1 class="text-3xl md:text-4xl font-semibold text-[color:var(--color-dark-blue)]">{t('closed.title')}</h1>
+          <div class="text-base md:text-lg opacity-80">{t('closed.message', { event: attendee?.event?.fields?.event_name || t('ticket.fallback_event_name') })}</div>
+        </div>
+      </div>
+    </div>
+  {:else}
   <div class="space-y-6 max-w-3xl mx-auto">
     <h1 class="text-3xl font-semibold">{t('event.checking_in_for')}</h1>
     <div class="relative">
@@ -158,7 +168,8 @@
       </div>
     {/if}
     </div>
-    {/if}
+  {/if}
+{/if}
 
 <div class="h-[80px]"></div>
 <CloudParticles height={120} />

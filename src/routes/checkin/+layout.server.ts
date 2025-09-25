@@ -135,5 +135,7 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
     } : null
   } : null;
 
-  return { attendee: sanitized, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL, eventLang } as any;
+  const checkinClosed = !!(data?.event?.fields as any)?.checkin_closed;
+
+  return { attendee: sanitized, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL, eventLang, checkinClosed } as any;
 };

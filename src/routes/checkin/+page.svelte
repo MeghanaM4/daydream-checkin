@@ -637,10 +637,20 @@
   <div class="space-y-6">
     {#if current === 'complete'}
       <button type="button" class="fixed right-6 top-5 underline cursor-pointer" onclick={() => (window.location.href = '/checkin/logout')}>{t('session.logout')}</button>
-    {:else}
+    {:else if !(data as any)?.checkinClosed}
       <div class="w-full h-2 rounded-md bg-[color:var(--color-border-tan)]/40 overflow-hidden"><div class="h-full bg-[color:var(--color-button-pink)] transition-[width] duration-300" style={`width: ${progressPct()}%`}></div></div>
     {/if}
 
+    {#if (data as any)?.checkinClosed && current !== 'complete'}
+      <div class="min-h-[60dvh] flex items-center justify-center p-4">
+        <div class="w-full max-w-[560px] rounded-xl border border-[color:var(--color-border-tan)] bg-white/80 shadow-sm overflow-hidden">
+          <div class="p-8 md:p-10 space-y-3 text-center">
+            <h1 class="text-3xl md:text-4xl font-semibold text-[color:var(--color-dark-blue)]">{t('closed.title')}</h1>
+            <div class="text-base md:text-lg opacity-80">{t('closed.message', { event: currentEvent.name || t('ticket.fallback_event_name') })}</div>
+          </div>
+        </div>
+      </div>
+    {:else}
 
     {#if current === 'info'}
       <Section title={t('info.section_title')} description={t('info.section_desc')}>
@@ -1095,13 +1105,14 @@
       </Section>
       <EventCard eventName={attendee.event?.fields.event_name} location={attendee.event?.fields.location} date={attendee.event?.fields.start_date} format={attendee.event?.fields.event_format} />
     {/if}
-  </div>
+     {/if}
+   </div>
 {/if}
-
+ 
 <div class="h-[20px]"></div>
-
+ 
 {#if showPicker}
-  <div class="fixed inset-0 z-50">
+    <div class="fixed inset-0 z-50">
     <div class="absolute inset-0 bg-black/40"></div>
     <div class="absolute left-1/2 top-20 -translate-x-1/2 w-[90vw] max-w-xl rounded-xl bg-white shadow-2xl border border-[color:var(--color-border-tan)]">
       <div class="p-3 border-b border-[color:var(--color-border-tan)]/70 bg-white/80 rounded-t-xl">

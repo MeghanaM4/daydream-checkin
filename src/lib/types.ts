@@ -57,6 +57,7 @@ export interface EventFields {
   location: string; // city/venue
   custom_waiver_link?: string; // optional DocuSeal or external waiver URL
   event_language?: string; // ISO language code like "en"
+  checkin_closed?: boolean; // whether check-in is closed for this event
 }
 
 export interface AttendeeWithEvent {

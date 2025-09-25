@@ -215,5 +215,9 @@
   "deleted": {
     "signup_deleted_title": "Signup deleted",
     "signup_deleted_message": "Your signup for {event} has been deleted. Please contact the event organizers if you have any questions."
+  },
+  "closed": {
+    "title": "Check-ins closed",
+    "message": "Check-ins for {event} are closed. Please contact the event organizers if you have any questions."
   }
 }
