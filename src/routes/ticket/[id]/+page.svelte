@@ -1,19 +1,16 @@
 <script lang="ts">
-  import type { AttendeeWithEvent } from '$lib/types';
   import { t } from '$lib/i18n';
   let { data } = $props();
-  const attendee = (data?.attendee as AttendeeWithEvent) || null;
-  const fields = attendee?.record.fields || {} as any;
-  const eventName = attendee?.event?.fields.event_name;
-  const eventDateIso = attendee?.event?.fields.start_date;
+  const ticket = (data as any)?.ticket;
+  const eventName = ticket?.eventName as string | undefined;
+  const eventDateIso = ticket?.eventDateIso as string | undefined;
   function fmt(d?: string) { try { if (!d) return ''; const dt = new Date(d); return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); } catch { return ''; } }
-  const name = (fields.preferred_name || fields.first_name || '') + (fields.last_name ? ` ${fields.last_name}` : '');
-  const id = attendee?.record.id;
-  const email = fields.email || '';
-  const inputClass = 'rounded-md border border-[color:var(--color-border-tan)] bg-white/70 px-3 py-2';
+  const name = ticket?.name as string | undefined;
+  const id = ticket?.id as string | undefined;
+  const email = ticket?.email as string | undefined;
 </script>
 
-{#if !attendee}
+{#if !ticket}
   <div class="p-6">{t('ticket.not_found')}</div>
 {:else}
   {#key id}
@@ -26,7 +23,7 @@
         </div>
         <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
         <div class="flex flex-col items-center gap-3">
-          <img alt={t('alt.ticket_qr')} class="bg-white p-3 rounded-md border border-[color:var(--color-border-tan)] w-[240px] h-[240px] md:w-[300px] md:h-[300px]" src={`https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(id)}`}/>
+          <img alt={t('alt.ticket_qr')} class="bg-white p-3 rounded-md border border-[color:var(--color-border-tan)] w-[240px] h-[240px] md:w-[300px] md:h-[300px]" src={`https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(id || '')}`}/>
           <div class="font-mono text-sm md:text-base opacity-80">{id}</div>
         </div>
         <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
@@ -50,7 +47,7 @@
             </div>
             <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
             <div class="flex flex-col items-center gap-3">
-              <img alt={t('alt.ticket_qr')} class="bg-white p-3 rounded-md border border-[color:var(--color-border-tan)] w-[240px] h-[240px] md:w-[300px] md:h-[300px]" src={`https://api.qrserver.com/v1/create-qr-code/?size=340x340&data=${encodeURIComponent(id)}`}/>
+              <img alt={t('alt.ticket_qr')} class="bg-white p-3 rounded-md border border-[color:var(--color-border-tan)] w-[240px] h-[240px] md:w-[300px] md:h-[300px]" src={`https://api.qrserver.com/v1/create-qr-code/?size=340x340&data=${encodeURIComponent(id || '')}`}/>
               <div class="font-mono text-sm md:text-base opacity-80">{id}</div>
             </div>
             <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
