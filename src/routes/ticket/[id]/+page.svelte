@@ -11,7 +11,21 @@
 </script>
 
 {#if !ticket}
-  <div class="p-6">{t('ticket.not_found')}</div>
+  {#if typeof window !== 'undefined' && window.self !== window.top}
+    <div class="p-4 text-center">
+      <h1 class="text-2xl font-semibold text-[color:var(--color-dark-blue)]">404</h1>
+      <div class="opacity-80">{t('ticket.not_found')}</div>
+    </div>
+  {:else}
+    <div class="min-h-[80dvh] flex items-center justify-center p-4">
+      <div class="w-full max-w-[560px] rounded-xl border border-[color:var(--color-border-tan)] bg-white/80 shadow-sm overflow-hidden">
+        <div class="p-8 md:p-10 space-y-3 text-center">
+          <h1 class="text-4xl md:text-5xl font-semibold text-[color:var(--color-dark-blue)]">404</h1>
+          <div class="text-base md:text-lg opacity-80">{t('ticket.not_found')}</div>
+        </div>
+      </div>
+    </div>
+  {/if}
 {:else}
   {#key id}
     {#if typeof window !== 'undefined' && window.self !== window.top}

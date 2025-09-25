@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import { getAttendeeByToken } from '$lib/server/airtable';
+import { getAttendeeByToken, updateAttendeeFields } from '$lib/server/airtable';
 import { redirect } from '@sveltejs/kit';
 
 import { PUBLIC_DOCUSEAL_EMBED_URL, PUBLIC_BASE_URL } from '$env/static/public';
@@ -11,6 +11,22 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
     return { attendee: null, docusealUrl: PUBLIC_DOCUSEAL_EMBED_URL, baseUrl: PUBLIC_BASE_URL } as any;
   }
   const data = await getAttendeeByToken(token);
+
+  // Ensure attendee has a ticket_id; generate once if missing (not exposed to client here)
+  async function genId(len = 8) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let out = '';
+    for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+  if (data?.record && !data.record.fields.ticket_id) {
+    try {
+      const id = await genId(8);
+      await updateAttendeeFields(data.record.id, { ticket_id: id } as any);
+      // reflect in memory for downstream logic (still not sent to client)
+      (data.record.fields as any).ticket_id = id;
+    } catch {}
+  }
 
   let initialStep: 'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'complete' = 'info';
   if (data?.record?.fields) {

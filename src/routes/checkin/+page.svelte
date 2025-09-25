@@ -20,6 +20,9 @@
   const docusealUrl: string = (data as any)?.docusealUrl || '';
   const baseUrl: string = (data as any)?.baseUrl || '';
   
+  // Ticket id is only fetched at the final step
+  let ticketId = $state<string | null>(null);
+  
   // Local event state for review card (so edits reflect immediately)
   let currentEvent = $state({
     id: attendee?.event?.id || '',
@@ -608,7 +611,15 @@
   });
   $effect(() => {
     setStepPersistence(current);
-    if (current === 'complete') complete();
+    if (current === 'complete') {
+      complete();
+      if (!ticketId) {
+        fetch('/api/ticket-id')
+          .then((r) => r.json())
+          .then((j) => { if (j?.ok) ticketId = j.ticket_id; })
+          .catch(() => {});
+      }
+    }
   });
 
   // Hide layout header on complete; show otherwise
@@ -1069,10 +1080,16 @@
           <p>{t('complete.checked_in')}</p>
           <p class="opacity-80">{t('complete.show_ticket')}</p>
           <div class="w-full max-w-[560px] mx-auto">
-            <iframe title={t('alt.daydream_ticket_iframe')} class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(attendee.record.id)}`}></iframe>
+          {#if ticketId}
+              <iframe title={t('alt.daydream_ticket_iframe')} class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white" src={`/ticket/${encodeURIComponent(ticketId)}`}></iframe>
+            {:else}
+            <div class="w-full h-[500px] md:h-[520px] rounded-lg border border-[color:var(--color-border-tan)] bg-white flex items-center justify-center opacity-70">{t('common.loading_events')}</div>
+            {/if}
           </div>
           <div class="flex justify-center">
-            <a class="inline-block rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(attendee.record.id)}`} target="_blank" rel="noreferrer">{t('complete.open_ticket_new_tab')}</a>
+            {#if ticketId}
+              <a class="inline-block rounded-md border border-[color:var(--color-border-tan)] px-3 py-2" href={`/ticket/${encodeURIComponent(ticketId)}`} target="_blank" rel="noreferrer">{t('complete.open_ticket_new_tab')}</a>
+            {/if}
           </div>
         </div>
       </Section>

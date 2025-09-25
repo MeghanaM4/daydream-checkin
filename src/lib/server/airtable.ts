@@ -59,6 +59,21 @@ export async function getAttendeeById(id: string): Promise<AttendeeWithEvent | n
   return { record, event };
 }
 
+export async function getAttendeeByTicketId(ticketId: string): Promise<AttendeeWithEvent | null> {
+  const url = `${AIRTABLE_BASE_URL}/attendees?filterByFormula=${encodeFilterFormula(`{ticket_id} = \"${ticketId}\"`)}`;
+  const json = await fetchJsonSafe<{ records: AirtableRecord<AttendeeFields>[] }>(url, { headers: headers() }, 3);
+  if (!json) return null;
+  const rec: AirtableRecord<AttendeeFields> | undefined = json.records?.[0];
+  if (!rec) return null;
+  let event: AirtableRecord<EventFields> | null = null;
+  const eventId = rec.fields.event?.[0];
+  if (eventId) {
+    const evJson = await fetchJsonSafe<AirtableRecord<EventFields>>(`${AIRTABLE_BASE_URL}/events/${eventId}`, { headers: headers() }, 2);
+    if (evJson) event = evJson;
+  }
+  return { record: rec, event };
+}
+
 export async function validateToken(token: string): Promise<AttendeeWithEvent | null> {
   return getAttendeeByToken(token);
 }

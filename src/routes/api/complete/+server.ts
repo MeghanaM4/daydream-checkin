@@ -23,8 +23,13 @@ export const POST: RequestHandler = async ({ cookies }) => {
       const preferred_name = attendee.record.fields.preferred_name || attendee.record.fields.first_name || '';
       const last_name = attendee.record.fields.last_name || '';
       const event = attendee.event?.fields.event_name || '';
-      const id = attendee.record.id;
-      const ticket_url = `${PUBLIC_BASE_URL}/ticket/${encodeURIComponent(id)}`;
+      // prefer public ticket_id; ensure it exists
+      let publicId = (attendee.record.fields as any).ticket_id as string | undefined;
+      if (!publicId) {
+        publicId = Math.random().toString(36).slice(2, 10);
+        await updateAttendeeFields(attendee.record.id, { ticket_id: publicId } as any);
+      }
+      const ticket_url = `${PUBLIC_BASE_URL}/ticket/${encodeURIComponent(publicId)}`;
       const resp = await fetch('https://app.loops.so/api/v1/transactional', {
         method: 'POST',
         headers: {
@@ -35,7 +40,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
           email,
           transactionalId: LOOPS_TICKET_TRANSACTIONAL_ID,
           addToAudience: false,
-          dataVariables: { preferred_name, last_name, event, id, ticket_url }
+          dataVariables: { preferred_name, last_name, event, id: publicId, ticket_id: publicId, ticket_url }
         })
       }).catch(() => null);
       if (resp && resp.ok) {

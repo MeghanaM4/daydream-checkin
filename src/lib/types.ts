@@ -36,6 +36,7 @@ export interface AttendeeFields {
   email_verification_code?: string;
   
   ticket_email_sent?: boolean;
+  ticket_id?: string; // opaque public ticket identifier
   
   // Waiver
    waiver_completed?: boolean;
