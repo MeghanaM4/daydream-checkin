@@ -119,7 +119,9 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
         waiver_completed: !!f.waiver_completed,
         checkin_completed: !!f.checkin_completed,
         // Pronouns (array)
-        pronouns: Array.isArray(f.pronouns) ? f.pronouns : []
+        pronouns: Array.isArray(f.pronouns) ? f.pronouns : [],
+        // Deleted flag
+        deleted_in_cockpit: !!f.deleted_in_cockpit
       }
     },
     event: data.event ? {

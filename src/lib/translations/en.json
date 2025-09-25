@@ -210,5 +210,9 @@
     "fallback_event_name": "Daydream",
     "name": "Name",
     "email": "Email"
+  },
+  "deleted": {
+    "signup_deleted_title": "Signup deleted",
+    "signup_deleted_message": "Your signup for {event} has been deleted. Please contact the event organizers if you have any questions."
   }
 }

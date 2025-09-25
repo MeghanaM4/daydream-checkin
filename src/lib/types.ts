@@ -37,6 +37,7 @@ export interface AttendeeFields {
   
   ticket_email_sent?: boolean;
   ticket_id?: string; // opaque public ticket identifier
+  deleted_in_cockpit?: boolean; // mark deleted in cockpit
   
   // Waiver
    waiver_completed?: boolean;

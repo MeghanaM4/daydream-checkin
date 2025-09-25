@@ -23,6 +23,17 @@
 </header>
 
 <main class="flex-1 max-w-4xl mx-auto px-4 py-6 space-y-4 w-full relative">
-{@render children?.()}
+  {#if attendee?.record?.fields?.deleted_in_cockpit}
+    <div class="min-h-[60dvh] flex items-center justify-center p-4">
+      <div class="w-full max-w-[560px] rounded-xl border border-[color:var(--color-border-tan)] bg-white/80 shadow-sm overflow-hidden">
+        <div class="p-8 md:p-10 space-y-3 text-center">
+          <h1 class="text-3xl md:text-4xl font-semibold text-[color:var(--color-dark-blue)]">{t('deleted.signup_deleted_title')}</h1>
+          <div class="text-base md:text-lg opacity-80">{t('deleted.signup_deleted_message', { event: attendee?.event?.fields?.event_name || t('ticket.fallback_event_name') })}</div>
+        </div>
+      </div>
+    </div>
+  {:else}
+    {@render children?.()}
+  {/if}
 </main>
 </div>
