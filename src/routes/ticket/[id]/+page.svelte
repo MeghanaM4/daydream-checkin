@@ -49,6 +49,8 @@
           <div class="text-[13px] opacity-70">{t('ticket.email')}</div>
           <div class="text-lg md:text-xl font-medium break-all">{email}</div>
         </div>
+        <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+        <div class="text-xs opacity-70 text-center">{t('ticket.guidance_blurb')}</div>
       </div>
     {:else}
       <!-- Standalone page with centered card -->
@@ -73,6 +75,8 @@
               <div class="text-[13px] opacity-70">{t('ticket.email')}</div>
               <div class="text-lg md:text-xl font-medium break-all">{email}</div>
             </div>
+            <div class="h-px bg-[color:var(--color-border-tan)]/70"></div>
+            <div class="text-sm max-w-[300px] mx-auto opacity-70 text-center">{t('ticket.guidance_blurb')}</div>
           </div>
         </div>
       </div>

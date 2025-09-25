@@ -205,7 +205,8 @@
     "not_found": "Ticket no encontrado.",
     "fallback_event_name": "Daydream",
     "name": "Nombre",
-    "email": "Correo electrónico"
+    "email": "Correo electrónico",
+    "guidance_blurb": "La información sobre la ubicación del evento será enviada por los organizadores locales del evento."
   },
   "events": {
     "search_placeholder": "Buscar eventos…",

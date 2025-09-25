@@ -209,7 +209,8 @@
     "not_found": "Ticket not found.",
     "fallback_event_name": "Daydream",
     "name": "Name",
-    "email": "Email"
+    "email": "Email",
+    "guidance_blurb": "Guidance about the location of the event will be sent out by your local event organizers."
   },
   "deleted": {
     "signup_deleted_title": "Signup deleted",
