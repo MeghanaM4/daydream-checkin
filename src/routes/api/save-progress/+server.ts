@@ -125,10 +125,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   }
 
   if (!Object.keys(toUpdate).length) {
-    return json({ ok: true, record: attendee.record });
+    return json({ ok: true });
   }
 
-  // Perform PATCH with detailed error capture
+  // Perform PATCH; do not echo updated records back to the client
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/attendees/${attendee.record.id}`;
   const resp = await fetch(url, {
     method: 'PATCH',
@@ -139,9 +139,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
     body: JSON.stringify({ fields: toUpdate })
   });
   if (!resp.ok) {
-    const detail = await resp.text();
-    return json({ ok: false, message: 'Failed to update record', detail }, { status: 500 });
+    // Avoid leaking upstream error bodies
+    return json({ ok: false, message: 'Failed to update record' }, { status: 500 });
   }
-  const updated = (await resp.json()) as any;
-  return json({ ok: true, record: updated });
+  // Swallow body; minimal success response
+  return json({ ok: true });
 };

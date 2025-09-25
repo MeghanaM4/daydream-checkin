@@ -14,7 +14,7 @@ export const GET: RequestHandler = async () => {
   });
   if (!res.ok) {
     const text = await res.text();
-    return json({ ok: false, message: 'Failed to fetch events', detail: text }, { status: 500 });
+    return json({ ok: false, message: 'Failed to fetch events' }, { status: 500 });
   }
   const data = await res.json();
   const records = (data?.records || []).filter((r: any) => (r.fields?.triage_status || '') === 'Approved');

@@ -28,8 +28,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
       headers: { Authorization: `Bearer ${env.DOCUSEAL_API_KEY}` }
     });
     if (!resp.ok) {
-      const detail = await resp.text();
-      return json({ ok: false, message: 'DocuSeal lookup failed', detail }, { status: 502 });
+      return json({ ok: false, message: 'DocuSeal lookup failed' }, { status: 502 });
     }
     const data = await resp.json();
     const completed = Array.isArray(data?.submissions) ? data.submissions.length > 0 : !!data?.count;

@@ -13,5 +13,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
   const updated = await updateAttendeeFields(attendee.record.id, { event: [eventId] } as any);
   if (!updated) return json({ ok: false, message: 'Failed to update event' }, { status: 500 });
-  return json({ ok: true, record: updated });
+  // Do not return the full record to the client
+  return json({ ok: true });
 };

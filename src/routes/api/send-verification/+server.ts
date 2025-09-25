@@ -57,8 +57,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
   });
 
   if (!res.ok) {
-  const text = await res.text();
-  return json({ ok: false, message: 'Failed to send email', detail: text }, { status: 500 });
+  return json({ ok: false, message: 'Failed to send email' }, { status: 500 });
   }
 
   // Persist pending email only in an httpOnly cookie for verification follow-up

@@ -12,7 +12,6 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
   }
   const data = await getAttendeeByToken(token);
 
-
   let initialStep: 'info' | 'additional' | 'waiver' | 'attendance' | 'accounts' | 'review' | 'complete' = 'info';
   if (data?.record?.fields) {
     const f: any = data.record.fields;
@@ -65,5 +64,58 @@ export const load: LayoutServerLoad = async ({ cookies, url }) => {
     throw redirect(302, url.pathname + url.search);
   }
 
-  return { attendee: data, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL, eventLang } as any;
+  // Sanitize attendee payload: include only fields used by the client UI
+  const f = (data?.record?.fields || {}) as any;
+  const e = (data?.event?.fields || {}) as any;
+  const sanitized = data ? {
+    record: {
+      id: data.record.id,
+      fields: {
+        // Identity/contact
+        email: f.email || '',
+        preferred_name: f.preferred_name || '',
+        first_name: f.first_name || '',
+        last_name: f.last_name || '',
+        phone: f.phone || '',
+        dob: f.dob || '',
+        address_1: f.address_1 || '',
+        address_2: f.address_2 || '',
+        city: f.city || '',
+        state: f.state || '',
+        country: f.country || '',
+        zip_code: f.zip_code || '',
+        // Accounts
+        github_username: f.github_username || '',
+        itch_username: f.itch_username || '',
+        // Emergency contacts
+        emergency_contact_1_name: f.emergency_contact_1_name || '',
+        emergency_contact_1_phone: f.emergency_contact_1_phone || '',
+        emergency_contact_1_relationship: f.emergency_contact_1_relationship || '',
+        emergency_contact_2_name: f.emergency_contact_2_name || '',
+        emergency_contact_2_phone: f.emergency_contact_2_phone || '',
+        emergency_contact_2_relationship: f.emergency_contact_2_relationship || '',
+        // Preferences
+        dietary_restrictions: f.dietary_restrictions || '',
+        shirt_size: f.shirt_size || '',
+        additional_accommodations: f.additional_accommodations || '',
+        // Flow flags
+        dummy_checkin_attendance_confirmation: !!f.dummy_checkin_attendance_confirmation,
+        waiver_completed: !!f.waiver_completed,
+        checkin_completed: !!f.checkin_completed,
+        // Pronouns (array)
+        pronouns: Array.isArray(f.pronouns) ? f.pronouns : []
+      }
+    },
+    event: data.event ? {
+      id: data.event.id,
+      fields: {
+        event_name: e.event_name || '',
+        event_format: e.event_format || '',
+        start_date: e.start_date || '',
+        location: e.location || ''
+      }
+    } : null
+  } : null;
+
+  return { attendee: sanitized, initialStep, docusealUrl, baseUrl: PUBLIC_BASE_URL, eventLang } as any;
 };
