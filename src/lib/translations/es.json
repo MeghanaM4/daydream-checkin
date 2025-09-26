@@ -158,7 +158,8 @@
     "complete_aria": "completar la exención",
     "to_continue": "para continuar.",
     "complete_before_continuing": "Por favor, completa la exención antes de continuar",
-    "verify_failed": "No se pudo verificar la exención."
+    "verify_failed": "No se pudo verificar la exención.",
+    "complete_in_same_browser": "Por favor, completa la exención en el mismo navegador que estás utilizando para el check-in. Si no lo haces, el sistema de check-in puede no detectar la exención como completada y es posible que necesites volver a completar la exención en el mismo navegador."
   },
   "email": {
     "verifying_code": "Verificando código…",

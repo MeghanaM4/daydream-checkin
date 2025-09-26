@@ -162,7 +162,8 @@
     "complete_aria": "complete the waiver",
     "to_continue": "to continue.",
     "complete_before_continuing": "Please complete the waiver before continuing",
-    "verify_failed": "Could not verify waiver."
+    "verify_failed": "Could not verify waiver.",
+    "complete_in_same_browser": "Please complete the waiver in the same browser you're using for check‑in. If you don't, the check-in system may not detect the waiver as completed and you might need to re-complete the waiver in the same browser."
   },
   "email": {
     "verifying_code": "Verifying code…",

@@ -781,6 +781,7 @@
       <Section title={t('waiver.section_title')}>
         <div class="space-y-3">
           <p class="opacity-80">{t('waiver.open_message')}</p>
+          <p class="text-sm opacity-70">{t('waiver.complete_in_same_browser')}</p>
           {#if docusealUrl}
             {#if waiverDone || fields.waiver_completed}
               <div class="flex justify-center text-sm text-green-700">{t('waiver.completed')}</div>
