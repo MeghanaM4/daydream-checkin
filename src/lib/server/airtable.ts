@@ -4,47 +4,56 @@ import type { AirtableRecord, AttendeeFields, AttendeeWithEvent, EventFields } f
 const AIRTABLE_BASE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}`;
 
 function headers() {
-return {
-Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-'Content-Type': 'application/json'
-} as const;
+  return {
+    Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+    'Content-Type': 'application/json'
+  } as const;
 }
 
-function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 async function fetchJsonSafe<T = any>(url: string, init: RequestInit, attempts = 2): Promise<T | null> {
   for (let i = 0; i < attempts; i++) {
     try {
-    const res = await fetch(url, { ...init, cache: 'no-store' });
-    if (res.ok) return (await res.json()) as T;
-    // retry only on 5xx
-    if (res.status >= 500 && i < attempts - 1) await sleep(200 * (i + 1));
-    else return null;
-  } catch {
-    if (i < attempts - 1) await sleep(200 * (i + 1));
-    else return null;
+      const res = await fetch(url, { ...init, cache: 'no-store' });
+      if (res.ok) return (await res.json()) as T;
+      // retry only on 5xx
+      if (res.status >= 500 && i < attempts - 1) await sleep(200 * (i + 1));
+      else return null;
+    } catch {
+      if (i < attempts - 1) await sleep(200 * (i + 1));
+      else return null;
+    }
   }
-}
-return null;
+  return null;
 }
 
 function encodeFilterFormula(formula: string) {
-return encodeURIComponent(formula);
+  return encodeURIComponent(formula);
+}
+
+// Escape a value for safe inclusion inside a double-quoted Airtable formula string
+function escapeAirtableString(value: string): string {
+  // Escape backslashes first, then double quotes. Keep newlines/tabs literal (Airtable supports them)
+  return value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
 }
 
 export async function getAttendeeByToken(token: string): Promise<AttendeeWithEvent | null> {
-const url = `${AIRTABLE_BASE_URL}/attendees?filterByFormula=${encodeFilterFormula(`{checkin_token} = "${token}"`)}`;
-const json = await fetchJsonSafe<{ records: AirtableRecord<AttendeeFields>[] }>(url, { headers: headers() }, 3);
-if (!json) return null;
-const rec: AirtableRecord<AttendeeFields> | undefined = json.records?.[0];
-if (!rec) return null;
-let event: AirtableRecord<EventFields> | null = null;
-const eventId = rec.fields.event?.[0];
-if (eventId) {
-const evJson = await fetchJsonSafe<AirtableRecord<EventFields>>(`${AIRTABLE_BASE_URL}/events/${eventId}`, { headers: headers() }, 2);
-if (evJson) event = evJson;
-}
-return { record: rec, event };
+  const safeToken = escapeAirtableString(token);
+  const url = `${AIRTABLE_BASE_URL}/attendees?filterByFormula=${encodeFilterFormula(`{checkin_token} = "${safeToken}"`)}`;
+  const json = await fetchJsonSafe<{ records: AirtableRecord<AttendeeFields>[] }>(url, { headers: headers() }, 3);
+  if (!json) return null;
+  const rec: AirtableRecord<AttendeeFields> | undefined = json.records?.[0];
+  if (!rec) return null;
+  let event: AirtableRecord<EventFields> | null = null;
+  const eventId = rec.fields.event?.[0];
+  if (eventId) {
+    const evJson = await fetchJsonSafe<AirtableRecord<EventFields>>(`${AIRTABLE_BASE_URL}/events/${eventId}`, { headers: headers() }, 2);
+    if (evJson) event = evJson;
+  }
+  return { record: rec, event };
 }
 
 export async function getAttendeeById(id: string): Promise<AttendeeWithEvent | null> {
@@ -60,7 +69,8 @@ export async function getAttendeeById(id: string): Promise<AttendeeWithEvent | n
 }
 
 export async function getAttendeeByTicketId(ticketId: string): Promise<AttendeeWithEvent | null> {
-  const url = `${AIRTABLE_BASE_URL}/attendees?filterByFormula=${encodeFilterFormula(`{ticket_id} = \"${ticketId}\"`)}`;
+  const safeTicketId = escapeAirtableString(ticketId);
+  const url = `${AIRTABLE_BASE_URL}/attendees?filterByFormula=${encodeFilterFormula(`{ticket_id} = "${safeTicketId}"`)}`;
   const json = await fetchJsonSafe<{ records: AirtableRecord<AttendeeFields>[] }>(url, { headers: headers() }, 3);
   if (!json) return null;
   const rec: AirtableRecord<AttendeeFields> | undefined = json.records?.[0];
