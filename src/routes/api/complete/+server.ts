@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
           email,
           transactionalId: LOOPS_TICKET_TRANSACTIONAL_ID,
           addToAudience: false,
-          dataVariables: { preferred_name, last_name, event, id: publicId, ticket_id: publicId, ticket_url }
+          dataVariables: { preferred_name, last_name, event, id: attendee.record.id, record_id: attendee.record.id, ticket_id: publicId, ticket_url }
         })
       }).catch(() => null);
       if (resp && resp.ok) {

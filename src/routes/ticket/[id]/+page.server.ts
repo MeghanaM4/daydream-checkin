@@ -11,7 +11,8 @@ export const load: PageServerLoad = async ({ params }) => {
   const e = attendee.event?.fields as any;
 
   const ticket = {
-    id,
+    id: attendee.record.id, // record ID for QR code
+    publicId: id, // original ticket_id
     name: `${f?.preferred_name || f?.first_name || ''}${f?.last_name ? ` ${f.last_name}` : ''}`.trim(),
     email: f?.email || '',
     eventName: e?.event_name || 'Daydream',
