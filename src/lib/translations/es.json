@@ -152,7 +152,7 @@
     "completed": "✓ Exención completada",
     "open_button": "Abrir exención",
     "not_configured": "El formulario de exención no está configurado. Establece PUBLIC_DOCUSEAL_EMBED_URL en tu entorno.",
-    "skip_for_now": "Saltar por ahora",
+    "skip_for_now": "Saltiar por ahora",
     "must_complete": "✗ Exención no completada — debes <button>completar la exención</button> para continuar.",
     "not_completed_prefix": "✗ Exención no completada — debes",
     "complete_aria": "completar la exención",
